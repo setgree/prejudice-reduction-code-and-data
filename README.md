@@ -1,8 +1,3 @@
----
-output:
-  pdf_document: default
-  html_document: default
----
 # Prejudice Reduction: Progress and Challenges
 
 This repository contains the code and data for reproducing the results in [Paluck, Porat, Clark and Green (2020)](https://doi.org/10.1146/annurev-psych-071620-030619).
