@@ -3,9 +3,9 @@ output:
   pdf_document: default
   html_document: default
 ---
-# Prejudice Reduction: Progress and Challenges (Paluck, Porat, Clark and Green 2020)
+# Prejudice Reduction: Progress and Challenges
 
-This repository contains the code and data for reproducing the results in the accompanying paper.
+This repository contains the code and data for reproducing the results in [Paluck, Porat, Clark and Green (2020)](https://doi.org/10.1146/annurev-psych-071620-030619).
 
 ## To reproduce all results:
 From the `/code` directory, execute either `0-main.R` or, if you prefer, `bash run.sh`.

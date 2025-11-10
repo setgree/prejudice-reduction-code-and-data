@@ -6,7 +6,7 @@ add_parenthesis <- function(vector){
 all_forest_template <- function(df_all, label_pos = 1.15){
   label_pos = label_pos
   
-  df_all %>%
+  df_all |>
     ggplot(aes(beta, label, col = col)) +
     scale_color_manual(values = c("black", "red3")) +
     geom_point(size = 3.6) +
@@ -31,7 +31,7 @@ all_forest_template <- function(df_all, label_pos = 1.15){
 big_forest_template <- function(df_big, label_pos = 2){
   label_pos = label_pos
   
-  df_big %>% 
+  df_big |> 
     ggplot(aes(beta, label, col = col)) +
     scale_color_manual(values = c("black", "red3")) +
     geom_point(size = 3.6) +
@@ -55,8 +55,8 @@ big_forest_template <- function(df_big, label_pos = 2){
 
 coef_label <- function(df){
   coef <- 
-    broom::tidy(lm(d ~ st_err_d, data = df))[,2] %>% 
-    mutate(estimate = round(estimate, 2)) %>%
+    broom::tidy(lm(d ~ st_err_d, data = df))[,2] |> 
+    mutate(estimate = round(estimate, 2)) |>
     pull()
   
   paste0("ŷ = ", str_c(coef, collapse = " + "), "se")
@@ -70,8 +70,8 @@ two_digits <- function(data){
 prep_meta_data <- function(subfield_df, overall_df = overall, subfield_var){
   x <- enquo(subfield_var)
   
-  subfield_df %>% 
-    bind_rows(overall_df) %>% 
+  subfield_df |> 
+    bind_rows(overall_df) |> 
     mutate(!!x := fct_explicit_na(!!x, "Overall"),
            col = ifelse(!!x == "Overall", 1, 0),
            col = factor(col, nmax = 4),
@@ -88,9 +88,9 @@ save_forest <- function(name, width = 13, height = 8){
 
   
 se_label <- function(df){
-  broom::tidy(lm(d ~ st_err_d, data = df))[,3] %>% 
-    mutate(std.error = round(std.error, 2)) %>%
-    pull() %>%
-    add_parenthesis() %>% 
+  broom::tidy(lm(d ~ st_err_d, data = df))[,3] |> 
+    mutate(std.error = round(std.error, 2)) |>
+    pull() |>
+    add_parenthesis() |> 
     str_c(., collapse = "  ")
 }
