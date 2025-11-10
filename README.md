@@ -61,15 +61,7 @@ From the project root directory, execute either `Rscript 0-main.R` or, if you pr
 
 **`raw-data.csv`** - The raw data, before cleaning or the addition of Cohen's D columns.
 
-**`sim_data.rds`** - The simulated data for use in `6-methods-check.Rmd`. 
-
-## Output
-
-**`4-paper-stats.html, 5-figures.html, 6-methods-check.html`**  - Rendered HTML files, interspersing code, data and text, created from the R scripts with the corresponding titles in `code/`. All rendering commands are in `0-main.R`.
-
-**`figs/`** - Contains figures saved from `5-figures.Rmd`. 
-
-**`vtable.html`** - provides a statistical overview of the variables in  `prejudice_meta_data.rds`.
+**`sim_data.rds`** - The simulated data for use in `6-methods-check.Rmd`.
 
 ## Documentation
 
