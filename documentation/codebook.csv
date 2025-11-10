@@ -1,0 +1,124 @@
+Variable,Description
+Title,title
+author,author
+year,publication year
+publication_title,The journal/venue in which the research was published
+abstract,Abstract of the research
+doi,Digital Object Identifier (when available)
+url,URL for the article (when available)
+source,Where did the team learn of this article from?
+preregister,"preregistration
+  0 - no
+  1 - yes"
+type_of_control,"type of control
+  1 - waitlist
+  2 - placebo
+  3 - pure / no treatment"
+publication_type,"1 - journal article
+  2 - dissertation or thesis
+  3 - unpublished study
+  4 - book chapter
+  5 - government report
+  6 - conference paper
+  7 - book"
+study_num,"study # within paper
+  (for multiple study papers)"
+mean_age,"Mean age
+  (across study / can repeat for all conditions)"
+setting,"setting
+  1 - preschool / daycare / kindergarten
+  2 - elementary (grades 1-5)
+  3 - middle/high (grades 6-12)
+  4 - college
+  5 - work
+  6 - community
+  7 - faith-based
+  8 - other
+  9 - Online (mturk or other)"
+country,country
+intervention_type,"1 - lab
+  2 - field
+  3 - survey/online"
+type_of_bias,"1 - race/ethnicity
+  2 - nationality
+  3 - immigrants/asylum seekers/refugees
+  4 - income/SES
+  5 - age
+  6 - sexuality
+  7 - body size
+  8 - ability
+  9 - transgender / gender
+  10 - minimal/artificial
+  11 - religion
+  12 - other"
+intervention_approach,"1 - cooperative learning
+  2 - entertainment
+  3 - peer influence, discussion/dialogue
+  4 - interpersonal contact
+  5 - extended and imaginary contact
+  6 - value consistency and self-worth
+  7 - cross-cultural/intercultural training
+  8 - social categorization
+  9 - cognitive and emotional training
+  10 - diversity training
+  11 - multicultural, antibias, moral education
+  12 - sensitivity, cultural competence for health and law
+  13 - conflict resolution
+  14 - uncategorizable ( + name, or suggested new category)"
+intervention_length,"Length of the intervention/session. In terms of miniutes, format: 00:00
+  if unspecified choose the option you feel is closest (00:05, 00:20, 01:00)"
+intervention_span,"intervention span (days/weeks/months) — over what time period did the intervention take place? E.g. for two sessions of a discussion group on consecutive days, intervention_span=2 days"
+light_touch,"light touch — interventions that are easy to implement, brief (under 10 muinutes) and inexpensive.
+  0 - no
+  1 - yes"
+open_data,"open data
+  0 - no
+  1 - yes"
+condition_name,"intervention condition name
+  (use name from study, ie contact or video)"
+control_name,Control condition name
+outcome_type,"outcome type
+  1 - behavior
+  2 - implicit attitudes
+  3 - explicit attitudes OR beliefs
+  4 - perceived norms
+  6 - emotion
+  7 - empathy
+  8 - behavioral intentions
+  9 - mediator"
+measure_name,"measure name
+  (if provided, if not ""-"")"
+intended_direction,"intended direction of measure
+  -1: negative (go down)
+  1: positive (increase)"
+time_measurement,"time between outcome measurement and end of intervention
+  1 - same day
+  2 - day after or more"
+delay,delay of measurement (hours/days/months/etc)
+n_treatment,n_treatment
+n_treatment_clusters,n_clusters (treatment)
+n_control,n_control
+n_control_clusters,n_clusters (control)
+effect_type,"effect type (""dim"" ""did"" ""d"" ""reg.coef"" ""t.test"" ""f.test"" ""eta-squared"" ""partial eta-squared"")"
+test_statistic,The raw variable from which Cohen’s D is calculated
+effect_direction,"characterize effect
+  (1 = the finding is in the direction the authors intended
+  0 = the authors characterize as ""null"" or ""nonsignificant"" and you've entered a zero
+  -1 = the finding is in the opposite direction the authors intended)"
+adjusted,"adjusted (= 1, otherwise 0. prefer non-adjusted)"
+sd_control,sd_control
+result_page,"where in paper (page #, table # if multiple tables on page or if no pages)"
+heterogenous,"are effects only reported as heterogenous or moderated? do you have to work to find average effects?
+  0 - no
+  1 - yes"
+provide_all_stats,"provide all required stats
+  0 - no
+  1 - yes"
+synergy,"Synergy (0 = no, 1 = yes) — the idea that two (or more) theory-inspired
+interventions work especially well when delivered in tandem (see sidebar)"
+personalization,"Personalization (0= no, 1 = yes) — customizing interventions according to the
+particular characteristics of the participants and the context they inhabit (see
+appendix)"
+policy_attitude_measure,"Policy attitudes measured (0 = no, 1 = yes)"
+unique_paper_id,A unique identifier for each paper
+unique_study_id,A unique identifier for each study (for when there are multiple studies within a single paper)

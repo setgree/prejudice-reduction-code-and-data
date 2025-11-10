@@ -1,0 +1,1116 @@
+---
+title: Figures
+author: John-Heny Pezzuto and Seth Green
+output:
+ html_document
+editor_options: 
+  chunk_output_type: inline
+---
+### setup
+
+```{r setup, echo=F}
+rm(list = ls())
+library(broom)
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(ggthemes)
+library(ggpubr)
+library(ggrepel)
+library(metafor)
+library(purrr)
+library(stringr)
+library(tidyr)
+
+# plot settings
+theme_set(theme_bw() + 
+            theme(panel.grid.major.y = element_blank(),
+                  panel.grid.minor.y = element_blank(),
+                  plot.margin = unit(rep(0, 4), "pt")))
+small_limits = c(0, .4)
+big_limits = c(0, .85)
+
+space_between_plots = -1
+
+# functions
+source("./functions/main-meta-function.R")
+source("./functions/factor-levels.R")
+source('./functions/forest_functions.R')
+
+# data 
+dat <- readRDS('../data/prejudice_meta_data.rds')
+
+```
+
+
+
+# Figure 1
+**Intervention approach, type of outcomes measured, types of prejudices addressed addressed, outcome types, and intervention settings**
+
+In these figures, if a single study tests more than one intervention approach or more than one prejudice, it is counted in both codes (i.e., the denominator for all percentages adds up to more than the total number of studies in the meta-analysis, N = 416). For example, 35% of all studies report more than one type of outcome.
+
+### Intervention approach
+```{r figure_one_intervention_approach}
+### **of all outcomes**
+(intervention_approach_plot <- 
+    dat %>% 
+    select(intervention_approach1:intervention_approach2) %>%
+    pivot_longer(cols = intervention_approach1:intervention_approach2, 
+                 values_to = "intervention_approach", values_drop_na = T) %>% 
+    count(intervention_approach, .drop = F, sort = T) %>% 
+    mutate(perc = n / sum(n),
+           intervention_approach = str_to_title(intervention_approach),
+           intervention_approach = fct_reorder(intervention_approach, n)) %>% 
+    ggplot(aes(intervention_approach, perc)) +
+    geom_col() +
+    coord_flip() +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                       limits = small_limits) +
+    theme(plot.margin = margin(t = 0, 
+                               r = space_between_plots, 
+                               b = 0, l = 0, 
+                               unit = "pt")) +
+    labs(title = "Intervention Approaches", 
+         x = "", 
+         y = ""))
+
+# ggsave(filename = "../output/figs/intervention_type.png")
+```
+
+### Prejudice type 
+
+```{r figure_one_prejudice_type}
+#### multi coded are double counted 
+
+### **of all outcomes**
+(prejudice_type_plot <- 
+   dat %>% 
+   select(unique_study_id, prejudice_type1:prejudice_type5) %>% 
+   pivot_longer(cols = prejudice_type1:prejudice_type5, 
+                values_to = "prejudice_type", values_drop_na = T) %>% 
+   count(prejudice_type, .drop = F, sort = T) %>% 
+   mutate(perc = n / sum(n),
+          prejudice_type = str_to_title(prejudice_type),
+          prejudice_type = fct_reorder(prejudice_type, n)) %>% 
+   ggplot(aes(prejudice_type, perc)) +
+   geom_col() +
+   coord_flip() +
+   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                      limits = small_limits) +
+   theme(plot.margin = margin(t = 0, 
+                              r = space_between_plots, 
+                              b = 0, l = 0, 
+                              unit = "pt")) +
+   labs(title = "Types of Prejudice",
+        x = "",
+        y = ""))
+
+# ggsave(filename = "../output/figs/prejudice_type.png")
+```
+
+### Outcome type  
+Note: multi coded are double counted 
+
+```{r figure_one_outcome_type}
+## **proportion** of studies that include at least one **collapsing**
+(outcome_type_plot <- 
+   dat %>% 
+   select(unique_study_id, starts_with("outcome_type")) %>% 
+   pivot_longer(cols = outcome_type1:outcome_type2, 
+                values_to = "outcome_type", values_drop_na = T) %>% 
+   distinct(unique_study_id, outcome_type) %>% # collapse
+   add_count(outcome_type) %>% 
+   mutate(prop = n / n_distinct(unique_study_id)) %>% 
+   distinct(outcome_type, .keep_all = T) %>% 
+   mutate(outcome_type = factor(outcome_type, # outcome type
+                                levels = outcome_type_levels,
+                                labels = outcome_type_levels),
+          outcome_type = str_to_title(outcome_type),
+          outcome_type = fct_reorder(outcome_type, prop)) %>% 
+   ggplot(aes(outcome_type, prop)) +
+   geom_col() +
+   coord_flip() +
+   scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                      limits = big_limits) +
+   theme(plot.margin = margin(t = .5, 
+                              r = .5, 
+                              b = 0, 
+                              l = space_between_plots, 
+                              unit = "pt")) +
+   labs(title = "Types of Outcomes",
+        x = "",
+        y = ""))
+
+# ggsave(filename = "../output/figs/outcome_type.png")
+```
+
+### settings 
+
+```{r figure_one_setting}
+#### multi coded are double counted 
+### **of all outcomes**
+(setting_plot <- 
+   dat %>% 
+   select(unique_study_id, starts_with("setting")) %>% # colllapse
+   pivot_longer(cols = setting1:setting4, 
+                values_to = "setting", values_drop_na = T) %>% 
+   count(setting, sort = T) %>% 
+   mutate(perc = n / sum(n),
+          setting = str_to_title(setting),
+          setting = fct_reorder(setting, n)) %>% 
+   ggplot(aes(setting, perc)) +
+   geom_col() +
+   coord_flip() +
+   scale_y_continuous(labels = scales::percent_format(accuracy = 1), 
+                      limits = big_limits) +
+   theme(plot.margin = margin(t = .5, 
+                              r = .5, 
+                              b = 0, 
+                              l = space_between_plots, 
+                              unit = "pt")) +
+   labs(title = "Intervention Settings",
+        x = "",
+        y = ""))
+
+# ggsave(filename = "../output/figs/setting.png")
+```
+
+### Arrange four subplots into one plot:
+
+```{r arrange_figure_one}
+ggpubr::ggarrange(intervention_approach_plot,
+          outcome_type_plot, 
+          prejudice_type_plot, 
+          setting_plot, 
+          align = "hv")
+
+ggsave(filename = "../output/figs/main_bar_charts.png", width = 14, height = 7) # , width = 14, height = 7
+```
+
+# Figure 2
+**Type of study methods in past decade**. This figure depicts the overall rise of experiments on prejudice reduction, and breaks down the total number of studies by those conducted in the laboratory, online, and in the field.
+```{r figure_two}
+## time trend intervention type on study level 
+theme_set(theme_bw() + 
+            theme(panel.grid.major.y = element_blank(),
+                  panel.grid.minor.y = element_blank()))
+
+color_mapping_intervention_type <- c("#4E79A7", "#F28E2B", "#E15759", "black")
+names(color_mapping_intervention_type) <- 
+  c('Lab', 
+    'Field', 
+    'Online', 
+    "Total")
+
+## collapse to study
+dat %>%
+  distinct(unique_study_id, year, intervention_type1, intervention_type2) %>%
+  pivot_longer(cols = intervention_type1:intervention_type2,
+               values_to = "intervention_type", values_drop_na = T) %>%
+  mutate(intervention_type = str_to_title(intervention_type)) %>% 
+  count(year, intervention_type) %>% 
+  complete(year, intervention_type, fill = list(n = 0)) %>% 
+  pivot_wider(names_from = intervention_type, id_cols = year, values_from = n) %>% 
+  rowwise() %>% 
+  mutate(Total = sum(`Lab`, `Field`, `Online`, na.rm = T)) %>% 
+  pivot_longer(cols = -year, 
+               names_to = "intervention_type", 
+               values_to = "n") %>% 
+  mutate(intervention_type = factor(intervention_type, 
+                                    levels = str_to_title(names(color_mapping_intervention_type)[c(4, 1, 3, 2)]))) %>% 
+  ggplot(aes(year, n, col = intervention_type)) +
+  geom_line(size = 1.3) +
+  scale_x_continuous(breaks = seq(2007, 2019, by = 2), limits = c(2007, 2019)) +
+  scale_color_manual(values = color_mapping_intervention_type) +
+  labs(x = "", 
+       y = "") +
+  theme(panel.grid.major.y = element_line(), 
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.box="vertical", 
+        legend.text = element_text(size = 12),
+        legend.key.width = unit(8, 'char'),
+        panel.grid.minor.x = element_blank(),
+        legend.margin=margin()) +
+  guides(color = guide_legend(nrow = 1, 
+                              override.aes = list(size = 2))) # legend size
+
+
+ggsave(filename = "../output/figs/time_trend_study_type.png", width = 9, height = 7)
+```
+
+# Appendix Figure 1
+Relationship between standard error and effect size for all studies
+
+```{r appendix_figure_one}
+df_funnel <- 
+  dat %>% 
+  #filter(is.na(n_treatment_clusters)) %>% 
+  group_by(unique_paper_id, unique_study_id) %>%
+  dplyr::summarise(d = mean(d),
+                   var_d = mean(var_d),
+                   n_treatment = mean(n_treatment),
+                   st_err_d = sqrt(var_d)) %>% 
+  ungroup()
+
+d_by_se_plot <- 
+  ggplot(df_funnel, aes(st_err_d, d)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(-.2, .6, by = .1), limits = c(0, .6)) +
+  stat_cor(aes(label = ..r.label..), method = "pearson") +
+  labs(x = "Standard Error") +
+  geom_smooth(method = "lm", fullrange = T)
+
+`%+%` <- ggplot2::`%+%`
+
+y_label = coef_label(df_funnel)
+x_label <- se_label(df_funnel)
+
+d_by_se_plot +
+  labs(title = "All Studies") +
+  # stat_regline_equation(label.y = 4.6) +
+  annotate(x = .044, y = 4.63, label = y_label, geom = "text") +
+  annotate(x = .05, y = 4.4, label = x_label, geom = "text") +
+  annotate(geom = "text", 
+           x = .02, 
+           y = 4.15,
+           label = str_c("n = ", nrow(df_funnel)))
+
+ggsave("../output/figs/se_d_all.png", width = 10, height = 7)
+```
+
+# Appendix Figure 2
+Relationship between standard error and effect size for lab studies
+
+```{r appendix_figure_two}
+df_funnel_lab <- 
+  dat %>% 
+  #filter(is.na(n_treatment_clusters)) %>% 
+  filter(intervention_type1 == "lab" | intervention_type2 == "lab") %>% 
+  group_by(unique_paper_id, unique_study_id) %>%
+  dplyr::summarise(d = mean(d),
+                   var_d = mean(var_d),
+                   n_treatment = mean(n_treatment),
+                   st_err_d = mean(st_err_d)) %>% 
+  ungroup()
+
+y_label = coef_label(df_funnel_lab)
+x_label <- se_label(df_funnel_lab)
+n_distinct(df_funnel_lab$unique_study_id)
+d_by_se_plot %+% 
+  df_funnel_lab +
+  labs(title = "Lab Studies") +
+  #stat_regline_equation(label.y = 2.4) +
+  annotate(x = .045, y = 2.4, label = y_label, geom = "text") +
+  annotate(x = .052, y = 2.25, label = x_label, geom = "text") +
+    annotate(geom = "text", 
+           x = .02, 
+           y = 2.1,
+           label = str_c("n = ", nrow(df_funnel_lab))) +
+  #geom_smooth(col = "red", fullrange = T) +
+  ggsave("../output/figs/se_d_lab.png", width = 10, height = 7)
+```
+
+# Appendix Figure 3
+ Relationship between standard error and effect size for online studies
+
+```{r appendix_figure_three}
+df_funnel_online <- 
+  dat %>% 
+  #filter(is.na(n_treatment_clusters)) %>% 
+  filter(intervention_type1 == "online" | intervention_type2 == "online") %>% 
+  group_by(unique_paper_id, unique_study_id) %>%
+  dplyr::summarise(d = mean(d),
+                   var_d = mean(var_d),
+                   n_treatment = mean(n_treatment),
+                   st_err_d = mean(st_err_d)) %>% 
+  ungroup()
+
+y_label = coef_label(df_funnel_online)
+x_label <- se_label(df_funnel_online)
+d_by_se_plot %+% 
+  df_funnel_online +
+  labs(title = "Online Studies") +
+  # stat_regline_equation(label.y = 1.05) +
+  annotate(x = .044, y = 1.05, label = y_label, geom = "text") +
+  annotate(x = .051, y = .99, label = x_label, geom = "text") +
+  annotate(geom = "text", 
+           x = .016, 
+           y = .928,
+           label = str_c("n = ", nrow(df_funnel_online)))
+
+  ggsave("../output/figs/se_d_online.png", width = 10, height = 7)
+```
+
+# Appendix Figure 4
+Relationship between standard error and effect size for field studies
+```{r appendix_figure_four}
+df_funnel_field <- 
+  dat %>% 
+  # filter(is.na(n_treatment_clusters)) %>% 
+  filter(intervention_type1 == "field" | intervention_type2 == "field") %>% 
+  group_by(unique_paper_id, unique_study_id) %>%
+  dplyr::summarise(d = mean(d),
+                   var_d = mean(var_d),
+                   n_treatment = mean(n_treatment),
+                   st_err_d = mean(st_err_d)) %>% 
+  ungroup()
+
+y_label = coef_label(df_funnel_field)
+x_label <- se_label(df_funnel_field)
+d_by_se_plot %+% 
+  df_funnel_field +
+  labs(title = "Field Studies") +
+  # stat_regline_equation(label.y = 4.6) +
+  annotate(x = .044, y = 4.6, label = y_label, geom = "text") +
+  annotate(x = .052, y = 4.4, label = x_label, geom = "text") +
+    annotate(geom = "text", 
+             x = .015, 
+             y = 4.2,
+           label = str_c("n = ", nrow(df_funnel_field)))
+
+ggsave("../output/figs/se_d_field.png", width = 10, height = 7)
+```
+## Appendix Figure 5
+D by SE plot for field experiments, but LOESS regression line:
+```{r appendix_figure_five_loess}
+d_by_se_loess_plot <- 
+  ggplot(df_funnel_field, aes(st_err_d, d)) +
+  geom_point() +
+  scale_x_continuous(breaks = seq(-.2, .6, by = .1), limits = c(0, .6)) +
+  stat_cor(aes(label = ..r.label..), method = "pearson") +
+  labs(x = "Standard Error") +
+  geom_smooth(method = "loess", fullrange = T) +
+      annotate(geom = "text", 
+             x = .02, 
+             y = 4.6,
+           label = str_c("n = ", nrow(df_funnel_field))) +
+  labs(title = "Field Studies (with LOESS Regression)")
+
+d_by_se_loess_plot
+ggsave(filename = '../output/figs/d_by_se_loess_plot.png', plot = d_by_se_loess_plot,
+      width = 10, height = 7)
+
+
+```
+# Appendix Figure 6
+Explicit and implicit attitudes over time as a percentage of yearly outcomes
+ 
+```{r appendix_figure_six}
+dat %>%
+  distinct(unique_study_id, year, outcome_type1, outcome_type2) %>%
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  mutate(outcome_type = str_to_title(outcome_type)) %>% 
+  count(year, outcome_type) %>%
+  group_by(year) %>% 
+  mutate(perc = n / sum(n)) %>% 
+  ungroup() %>% 
+  filter(outcome_type %in% c("Explicit Attitudes Or Beliefs", "Implicit Attitudes")) %>% 
+  complete(year, outcome_type, fill = list(n = 0)) %>% 
+  pivot_wider(names_from = outcome_type, id_cols = year, values_from = perc) %>%
+  drop_na(year) %>% 
+  # mutate(Total = rowSums(.) - year) %>%
+  pivot_longer(cols = -year, 
+               names_to = "outcome_type", 
+               values_to = "perc") %>% 
+  mutate(outcome_type = fct_reorder(outcome_type, -perc)) %>% 
+  ggplot(aes(year, perc, col = outcome_type)) +
+  geom_line(size = 1.3) +
+  scale_x_continuous(breaks = seq(2007, 2019, by = 2), 
+                     limits = c(2007, 2019)) +
+  scale_y_continuous(breaks = seq(0, .8, by = .1), 
+                     limits = c(0, .75), 
+                     labels = scales::percent) +
+  labs(x = "", 
+       y = "") +
+  theme(panel.grid.major.y = element_line(),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12),
+        panel.grid.minor.x = element_blank(),
+        legend.position="bottom")
+
+ggsave(filename = "../output/figs/time_trend_outcome_type_explicit_implicit.png", width = 9, height = 7)
+
+
+
+
+```
+
+
+# Appendix Figure 7
+: Intervention approach meta-analytic estimates
+```{r appdendix_figure_seven}
+## forest functions -----------------------------------
+theme_set(theme_light())
+
+overall <- meta_analyze()
+overall_big <- meta_analyze(treatment_size_eqlgrtr_than = 78, 
+                            drop_clusters = T)
+
+## intervention approach -----------------------------------
+iv_approach <- meta_analyze(intervention_approach)
+iv_approach_big <- meta_analyze(intervention_approach, 
+                                treatment_size_eqlgrtr_than = 78, 
+                                drop_clusters = T)
+
+iv <- prep_meta_data(iv_approach, subfield_var = intervention_approach)
+iv_big <- prep_meta_data(iv_approach_big, overall_big, 
+                         subfield_var = intervention_approach) %>% 
+  mutate(col = as.integer(col) + 2,
+         col = factor(col, nmax = 4))
+
+all_forest_template(iv)
+save_forest("../output/figs/iv_approach.png")
+
+# big_forest_template(iv_big, label_pos = .9)
+```
+
+# Appendix Figure 8
+Outcome type meta-analytic estimates
+
+```{r appdenix_figure_eight}
+ot_meta <- meta_analyze(outcome_type)
+ot_meta_big <- meta_analyze(outcome_type, 
+                            treatment_size_eqlgrtr_than = 78, 
+                            drop_clusters = T)
+
+ot_df <- prep_meta_data(ot_meta, subfield_var = outcome_type)
+ot_df_big <- prep_meta_data(ot_meta_big, overall_big, 
+                            subfield_var = outcome_type)
+
+all_forest_template(ot_df, label_pos = 1.5)
+save_forest("../output/figs/outcome_type.png")
+
+#big_forest_template(ot_df_big, label_pos = .9)
+```
+
+### Appendix Figure 9
+Intervention approach meta-analytic estimates, for ≥ 78 participants in the treatment condition, no clusters
+
+```{r appendix_figure_nine}
+big_forest_template(iv_big)
+save_forest("../output/figs/iv_approach_big.png")
+```
+
+# Appendix Figure 10
+Outcome types meta-analytic estimates, for ≥ 78 participants
+in the treatment condition, no clusters
+```{r appendix_figure_ten}
+big_forest_template(ot_df_big, label_pos = .9)
+save_forest("../output/figs/outcome_type_big.png", width = 5)
+```
+
+# Appendix Figure 11
+Relationship between explicit and implicit prejudice
+
+```{r appendix_figure_eleven}
+implicit_explicit_data <- 
+dat %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  transmute(unique_study_id, 
+            outcome_type = str_to_title(outcome_type), 
+            d) %>% 
+  filter(outcome_type %in% c("Explicit Attitudes Or Beliefs", "Implicit Attitudes")) %>% 
+  group_by(unique_study_id, outcome_type) %>% 
+  summarise(d = mean(d)) %>% # collpase within study
+  mutate(n_outcomes = n()) %>% 
+  ungroup() %>% 
+  filter(n_outcomes == 2) %>% 
+  pivot_wider(names_from = outcome_type, values_from = d)
+
+implicit_explicit_data %>% 
+  ggplot(aes(`Explicit Attitudes Or Beliefs`, `Implicit Attitudes`)) +
+  geom_point() +
+  geom_smooth() +
+  scale_x_continuous(limits = c(-.4, 1.2)) +
+  scale_y_continuous(limits = c(-.4, 2.5)) +
+  theme(panel.grid.major.y = element_line()) +
+  stat_cor(aes(label = ..r.label..), method = "pearson") +
+  annotate(geom = "text", 
+           x = -.36, 
+           y = 2.33, 
+           label = str_c("n = ", nrow(implicit_explicit_data))) +
+  labs(#title = "Correlation Between Outcome Types Within Studies",
+       y = "Implicit Attitudes Effect Size",
+       x = "Explicit Attitudes Effect Size"
+       #subtitle = "Studies that include both 'Explicit Attitude' and 'Implicit Attitude' outcomes"
+       )
+
+ggsave("../output/figs/explicit_x_implicit.png", width = 10, height = 7)
+```
+
+## Appendix Figure 12
+
+### Meta Analytic Results By Sample Size Quintiles
+Effects collapsed on the study level
+```{r appendix_figure_12}
+treatment_cat <- meta_analyze(n_treatment_category, keep_data = T) %>%
+  drop_na(n_treatment_category)
+
+effect_size <- 
+treatment_cat %>% 
+  select(beta, se) %>% 
+  mutate_all(~two_digits(.)) %>% 
+  mutate(se = add_parenthesis(se),
+         beta = str_c(beta, se, sep = "\n")) %>% 
+  pull(beta)
+
+
+treatment_cat %>% 
+  mutate(col = "Study Estimate",
+         weights = map(robust_meta, weights.rma.uni)) %>% 
+  select(n_treatment_category, data, weights) %>% 
+  unnest(col = c(data, weights)) %>% 
+    ggplot(aes(d, n_treatment_category, size = weights)) +
+    geom_jitter(aes(col = "black"),
+                alpha = .4, 
+                position = position_jitter(width = .0, 
+                                           height = .3)) +
+  geom_point(aes(d,
+                 n_treatment_category,
+                  col = "red",
+                 size = weights), 
+             show.legend = T,
+             data = transmute(treatment_cat, 
+                      n_treatment_category,
+                      d = beta,
+                      col = "Meta Analytic Estimate",
+                      weights = 1)
+             ) +
+  geom_label(data = transmute(treatment_cat, 
+                      n_treatment_category,
+                      d = beta,
+                      col = "Meta Analytic Estimate",
+                      weights = 1), 
+             aes(x = 3.6, 
+                 y = n_treatment_category,
+                 label = effect_size),
+             #nudge_x = 2.7,
+             #nudge_y = .1,
+             show.legend = F) +
+  scale_colour_manual(name = '', 
+         values =c('black' = 'black','red' = 'red'), 
+         labels = c("Study Estimate","Meta Analytic Estimate")) +
+  scale_size(breaks = seq(.6, 2.2, by = .4), limits = c(.6, 2.5)) +
+    labs(#title = "Meta Analytic Results By Sample Size Quintiles",
+         #subtitle = "Effects collapsed on the study level",
+         x  = "Meta Analytic Effect Size (Cohen's D)",
+         y = "", 
+         size = "Effect Size Weights") +
+    theme(axis.text.y = element_text(colour = "black",
+                                     face = "plain"),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.x = element_blank()) +
+  guides(col = guide_legend(order = 1),
+         size = guide_legend(order = 2))
+
+ggsave("../output/figs/quintile-points.png", 
+       width = 7.5)
+
+
+```
+### Appendix Figure 13:  D by SE plot, with shape and color assigned to prejudice and shape asigned intervention 
+
+```{r appendix_figure_thirteen}
+df_flat <- dat  %>%
+  group_by(unique_study_id, outcome_type1) %>%
+  mutate(d = mean(d), 
+         var_d = mean(var_d),
+         st_err_d = mean(st_err_d)) %>%
+  select(author, year, unique_paper_id, unique_study_id, everything()) %>%
+  slice(1) %>% 
+  ungroup()
+
+all_plot <- ggplot(data = df_flat,
+                   mapping = aes(x = st_err_d, y = d, 
+                                 colour = prejudice_type1,
+                                 shape = intervention_type1)) +
+  geom_point(size = 3) +
+  geom_smooth(mapping = aes(x = st_err_d, y = d),
+              inherit.aes = FALSE, method = 'lm') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Standard Error") + 
+  ylab("Effect Sizes") +
+  ggtitle("Effect Sizes by Standard Error") +
+  labs(colour = "Prejudice Type", shape = "Intervention Type") +
+  theme_bw()
+all_plot 
+
+ggsave(filename = '../output/figs/all_plot.png', plot = all_plot, 
+       width = 16, height = 9)
+
+```
+
+
+# Additional plots
+The following are not included in the paper or the appendix, but present additional ways of visualizing the data that the team explored.
+
+## Additional forest plots
+**Setting**
+```{r setting_forest_plot}
+setting_meta <- meta_analyze(setting)
+setting_meta_big <- meta_analyze(setting, 
+                                 treatment_size_eqlgrtr_than = 78, 
+                                 drop_clusters = T)
+
+setting_df <- prep_meta_data(setting_meta, subfield_var = setting)
+setting_df_big <- prep_meta_data(setting_meta_big, overall_big, 
+                                 subfield_var = setting)
+
+all_forest_template(setting_df, label_pos = 1.5)
+save_forest("../output/figs/setting.png")
+
+big_forest_template(setting_df_big, label_pos = .95)
+save_forest("../output/figs/setting_big.png", width = 7)
+```
+
+
+**Prejudice type**
+```{r prejudice_forest_plots}
+pt_meta <- meta_analyze(prejudice_type)
+pt_meta_big <- meta_analyze(prejudice_type, 
+                            treatment_size_eqlgrtr_than = 78, 
+                            drop_clusters = T)
+
+pt_df <- prep_meta_data(pt_meta, subfield_var = prejudice_type)
+pt_df_big <- prep_meta_data(pt_meta_big, overall_big, 
+                            subfield_var = prejudice_type)
+
+all_forest_template(pt_df, label_pos = 1.5)
+save_forest("../output/figs/prejudice_type.png", height = 9)
+
+big_forest_template(pt_df_big, label_pos = 1.7)
+save_forest("../output/figs/prejudice_type_big.png", width = 7)
+```
+
+
+### Extension of Figure 5: 
+all outcome types, rather than just implicit and explicit attitudes
+```{r extension_to_figure_five}
+## time trend outcome type -----------------------------------
+dat %>%
+  distinct(unique_study_id, year, outcome_type1, outcome_type2) %>%
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  mutate(outcome_type = str_to_title(outcome_type)) %>% 
+  count(year, outcome_type) %>% 
+  complete(year, outcome_type, fill = list(n = 0)) %>% 
+  pivot_wider(names_from = outcome_type, id_cols = year, values_from = n) %>% 
+  drop_na(year) %>% 
+  # mutate(Total = rowSums(.) - year) %>%
+  pivot_longer(cols = -year, 
+               names_to = "outcome_type", 
+               values_to = "n") %>% 
+  mutate(outcome_type = fct_reorder(outcome_type, -n)) %>% 
+  ggplot(aes(year, n, col = outcome_type)) +
+  geom_line(size = 1.3) +
+  scale_x_continuous(breaks = seq(2007, 2019, by = 2), limits = c(2007, 2019)) +
+  labs(x = "", 
+       y = "") +
+  theme(panel.grid.major.y = element_line(),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12),
+        panel.grid.minor.x = element_blank())
+
+ggsave(filename = "../output/figs/time_trend_outcome_type.png", width = 9, height = 7)
+
+```
+
+### Relationship between explicit attitudes and behavior
+```{r }
+dat %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  transmute(unique_study_id, 
+            outcome_type = str_to_title(outcome_type), 
+            d) %>% 
+  filter(outcome_type %in% c("Explicit Attitudes Or Beliefs", "Behavior")) %>% 
+  group_by(unique_study_id, outcome_type) %>% 
+  summarise(d = mean(d)) %>% # collpase within study
+  mutate(n_outcomes = n()) %>% 
+  ungroup() %>% 
+  filter(n_outcomes == 2) %>% 
+  pivot_wider(names_from = outcome_type, values_from = d) %>% 
+  ggplot(aes(`Explicit Attitudes Or Beliefs`, Behavior)) +
+  geom_point() +
+  geom_smooth() +
+  scale_x_continuous(limits = c(-.2, 1.5)) +
+  scale_y_continuous(breaks = seq(-.5, 1.5, by = .5)) +
+  theme(panel.grid.major.y = element_line(),
+        panel.grid.minor.y = element_blank()) +
+  stat_cor(aes(label = ..r.label..), method = "pearson") +
+  labs(title = "Correlation Between Outcome Types Within Studies",
+       subtitle = "Studies that include both 'Explicit Attitude' and 'Behavior' outcomes")
+
+```
+
+### Relationship between implicit attitudes and behavior
+```{r }
+dat %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  transmute(unique_study_id, 
+            outcome_type = str_to_title(outcome_type), 
+            d) %>% 
+  filter(outcome_type %in% c("Implicit Attitudes", "Behavior")) %>% 
+  group_by(unique_study_id, outcome_type) %>% 
+  summarise(d = mean(d)) %>% # collpase within study
+  mutate(n_outcomes = n()) %>% 
+  ungroup() %>% 
+  filter(n_outcomes == 2) %>% 
+  pivot_wider(names_from = outcome_type, values_from = d) %>% 
+  ggplot(aes(`Implicit Attitudes`, Behavior)) +
+  geom_point() +
+  # geom_smooth(method = "lm") +
+  # stat_cor(aes(label = ..r.label..), method = "pearson") +
+  # scale_x_continuous(limits = c(-.2, 1.5)) +
+  # scale_y_continuous(breaks = seq(-.5, 1.5, by = .5)) +
+  theme(panel.grid.major.y = element_line(),
+        panel.grid.minor.y = element_blank()) +
+  labs(title = "Correlation Between Outcome Types Within Studies",
+       subtitle = "Studies that include both 'Implicit Attitude' and 'Behavior' outcomes")
+```
+
+## number of *papers* per year 
+```{r }
+dat %>%
+  distinct(year, unique_paper_id) %>% 
+  count(year) %>% 
+  ggplot(aes(year, n)) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(2007, 2019, by = 2)) +
+  labs(title = "Number of Coded Papers Each Year", 
+       x = "", 
+       y = "") +
+  theme(panel.grid.major.y = element_line())
+```
+
+
+### quintile plot
+```{r quintile_plot}
+# quintile plot 
+theme_set(theme_light())
+
+overall <- meta_analyze()
+overall_big <- meta_analyze(treatment_size_eqlgrtr_than = 78, 
+                            drop_clusters = T)
+
+
+lower <- str_extract(levels(treatment_cat$n_treatment_category)[1], ".*,")
+upper <- str_sub(str_extract(levels(treatment_cat$n_treatment_category)[nrow(treatment_cat)], ",.*"), 2)
+
+palettes <- ggthemes_data[["tableau"]][["color-palettes"]][["regular"]]$`Tableau 10`
+
+(main_quintile_plot <- 
+    treatment_cat %>% 
+    ggplot(aes(beta, n_treatment_category, col = fct_rev(n_treatment_category))) +
+    geom_point(size = 3.6) +
+    geom_errorbar(aes(xmin = ci.lb, xmax = ci.ub), width = .3, size = 1.3) +
+    geom_vline(xintercept = 0, linetype = 5) +
+    scale_x_continuous(limits = c(-.1, .8)) +
+    #scale_color_manual(values = c(pull(palettes)[1:5])) +
+    labs(title = "Meta Analytic Results By Sample Size Quintiles",
+         subtitle = "95% Confidence Intervals. Effects collapsed on the study level",
+         x  = "Meta Analytic Effect Size (Cohen's D)",
+         y = "", 
+         col = "Treatment Sample Size") +
+    theme(legend.position = "none",
+          axis.text.y = element_text(colour = "black",
+                                     face = c(rep("plain", 5), "bold")),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.x = element_blank())
+)
+
+ggsave("../output/figs/quintile.png", height = 4.5, width = 7)
+```
+
+
+### relationship between SE & D for papers with same day measurement
+
+```{r }
+collapsed_data_immediate <- 
+  dat %>% 
+  filter(time_measurement == "same day") %>% 
+  select(unique_paper_id, unique_study_id, d, var_d) %>% 
+  group_by(unique_paper_id, unique_study_id) %>% 
+  summarise(d = mean(d), 
+            var_d = mean(var_d)) %>% 
+  mutate(se_d = sqrt(var_d)) %>% 
+  ggplot(aes(se_d, d)) +
+  geom_point(alpha = .3) +
+  geom_smooth(method = "lm") +
+  theme_light()
+collapsed_data_immediate
+```
+
+### Light touch studies over time
+Description: a graph of light touch studies over time that tracks effect sizes just for studies that have multiple end points (for a single dependent variable).
+
+```{r light_touch, fig.width=11}
+
+# subset the relevant studies 
+light_delay <- 
+  dat %>%
+  filter(light_touch == 'light touch') %>%
+    mutate(n = n_treatment + n_control) %>% 
+  group_by(unique_study_id, condition_name, measure_name) %>%
+  filter(length(unique(delay)) > 1) %>% # subsets studies where there is > 1 entry for delay
+  group_by(unique_study_id, delay) %>%
+  mutate(d = mean(d), 
+         n = mean(n),
+         var_d = mean(var_d),
+         st_err_d = mean(st_err_d)) %>% 
+  mutate(year = as.character(year),
+         year = case_when(author == "Lytle, Ashley and S. R. Levy" ~
+                            case_when(unique_study_id == 88 ~ "2019 a",
+                                      unique_study_id == 89 ~ "2019 b"),
+                          TRUE ~ year)) %>%
+    select(title, author, year, measure_name, unique_paper_id, unique_study_id, 
+         condition_name, time_measurement, delay, n_treatment, n_control,
+         measure_name,d, var_d, st_err_d, outcome_type1,
+         intervention_type1, prejudice_type1) %>% 
+  distinct(unique_study_id, .keep_all = T)
+
+# add new column that's log of (delay +1) -- 
+# logging the X axis helps clarify # the pattern,
+# and add 1 to all values because log(0) = -inf and ggplot
+# pushes -inf values to be half-on, half-off the grid
+
+light_delay <- light_delay %>%
+  mutate(log_delay = log(delay +1))
+
+# new variable for "percentage of population remaining at different time points"
+# size of points on scatterplot will reflect this
+light_delay <- light_delay %>%
+  group_by(unique_study_id) %>%
+  mutate(n_initial = first(n_treatment) + first(n_control)) %>% ungroup() %>%
+  mutate(n_frac = (n_treatment + n_control) / n_initial) %>%
+  select(-n_initial)
+
+# string of last names of first authors of each paper for label
+lead_author <- word(string = light_delay$author, sep = ',| ')
+
+# delay plot
+delay_plot <- ggplot(data = light_delay,
+                     mapping = aes(x = log_delay, y = d, 
+                                   label = paste(lead_author, year), 
+                                   colour = prejudice_type1,
+                                   shape = intervention_type1)) +
+  geom_point(mapping = aes(size = 3 * n_frac)) +
+  geom_line(mapping = aes(group = unique_study_id)) + 
+  geom_label_repel(max.iter = 5000, 
+                   box.padding = unit(0.25, "lines"),
+                   point.padding = unit(.25, "lines"),
+                   segment.color = "grey",
+                   size = 4,
+                   alpha = 1, 
+                   show.legend = FALSE) +
+  ggtitle("Effect Sizes by Measurement Delay") +  
+  xlab("Measurement Delay") + 
+  ylab("Effect Sizes") +
+  labs(colour = "Prejudice Type", shape = "Intervention Type") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  guides(size = FALSE)
+delay_plot
+ggsave(filename = '../output/figs/delay_plot.png', plot = delay_plot,
+       width = 16, height = 9)
+
+```
+
+### redo light delay plot with _just_ the Lai et al. (2016) data
+Lai et al.(2016) find that all interventions decline in effect across time. Plotting this requires slightly different parameters than the above light delay plot, because each individual study in the Lai paper tests multiple interventions, which makes collapsing at the level of the study uninformative. 
+
+```{r lai_light_delay_plot}
+lai <- readRDS('../data/lai_data.rds')
+# subset the relevant studies 
+light_delay_lai <- 
+  lai %>%
+  filter(light_touch == 'light touch') %>%
+    mutate(n = n_treatment + n_control) %>% 
+  group_by(unique_study_id, condition_name, measure_name) %>%
+  filter(length(unique(delay)) > 1)
+# subsets studies where there is > 1 entry for delay
+
+light_delay_lai <- light_delay_lai %>% 
+  group_by(condition_name, delay) %>%
+  mutate(d = mean(d), 
+         n = mean(n),
+         var_d = mean(var_d),
+         st_err_d = mean(st_err_d)) %>% 
+  select(title, author, year, unique_paper_id, unique_study_id, 
+         condition_name, time_measurement, delay, n_treatment, n_control,
+         measure_name,d, var_d, st_err_d, intervention_approach1) %>%
+  mutate(n_initial = first(n_treatment) + first(n_control)) %>% ungroup() %>%
+  mutate(n_frac = (n_treatment + n_control) / n_initial) %>%
+  select(-n_initial) %>%
+  mutate(
+    condition_counter = 
+      case_when(
+        condition_name == 'vivid counterstereotypic scenario' ~ 'a',
+        condition_name == 'practicing IAT with counterstereotypical exemplars' ~ 'b',
+        condition_name == 'shifting group boundaries through competition' ~ 'c',
+        condition_name == 'shifting group affiliation under threat' ~ 'd',
+        condition_name == 'priming multiculturalism' ~ 'e',
+        condition_name == 'evaluative conditioning' ~ 'f',
+        condition_name == 'evaluative conditioning with the go-no-go association task' ~ 'g' ,
+        condition_name == 'using implementation intentions' ~ 'h'))  %>%
+  distinct(condition_name, delay, .keep_all = T)
+
+# delay plot
+delay_plot_lai <- ggplot(data = light_delay_lai,
+                     mapping = aes(x = delay, y = d, colour = intervention_approach1,
+                                   label = paste0('Lai et al. ', condition_counter))) +
+  geom_point(mapping = aes(size = 1 * n_frac)) +
+  geom_line(mapping = aes(group = condition_name)) + 
+  geom_label_repel(max.iter = 5000,
+                   box.padding = unit(0.25, "lines"),
+                   point.padding = unit(.25, "lines"),
+                   segment.color = "grey",
+                   size = 4,
+                   alpha = 1,
+                   show.legend = FALSE) +
+  ggtitle("Effect Sizes by Measurement Delay") +  
+  xlab("Measurement Delay") + 
+  ylab("Effect Sizes") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(colour = "Intervention Approach") + 
+  guides(size = FALSE)
+delay_plot_lai
+ggsave(filename = '../output/figs/delay_plot_lai.png', plot = delay_plot_lai,
+       width = 16, height = 9)
+
+
+```
+## Relationship between D and N_treatment
+Looking at all studies, then lab, field, online, and also population = MTurk.
+
+Starting with all categories of prejudice -- the color of the dot will 
+correspond to the target of prejudice studied. 
+
+Note: the Ns here reflect the number of unique studies rather than unique papers
+in each category.
+
+```{r d_by_n_function_and_all_output}
+source('./functions/dplot.R')
+dplot()
+```
+
+```{r d_by_n_lab}
+dplot(setting = 'lab')
+```
+
+```{r d_by_n_field}
+dplot(setting = 'field')
+```
+
+
+
+```{r d_by_n_online}
+dplot(setting = 'online')
+```
+
+### D by N plot, focusing on a few categories:
+> The modal category is racial and ethnic prejudice, which accounts for nearly half of all studies. This category would encompass almost 60% of all studies were it expanded to include nationality and religion, which are sometimes correlated with ethnicity.
+
+```{r dplot_for_race_and_religion_and_nationality}
+race_and_race_adjacent_categories <- c('race/ethnicity', 'nationality', 
+                                       'religion')
+dplot(setting = 'all', prej_data = dat %>% 
+        filter(prejudice_type1 %in% race_and_race_adjacent_categories),
+      dot_color = F, title = F) + 
+  ggtitle('Relationship between D and log(N of treatment) for race/ethnic, national, and 
+  religious prejudices') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### D by SE plot just the Lai et al. (2014, 2016) studies
+
+```{r d_by_se_lai_studies}
+lai <- readRDS('../data/lai_data.rds') 
+
+lai_plot <- ggplot(data = lai,
+                   mapping = aes(x = st_err_d, y = d)) +
+  geom_point(size = 3) +
+  geom_smooth(mapping = aes(x = st_err_d, y = d),
+              inherit.aes = FALSE, method = 'lm') +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  xlab("Standard Error") + 
+  ylab("Effect Sizes") +
+  ggtitle("Effect Sizes by Standard Error for Lai et al. (2014, 2016)") +
+  labs(shape = "Intervention Type") +
+  theme_bw()
+  
+# compute statistical summaries and combine into annotation dataset
+  dcor <- paste("R = ", round(cor(lai$d, lai$st_err_d), digits = 2))
+  coef <-  broom::tidy(lm(d ~ st_err_d, data = lai))[,2] %>% 
+      mutate(estimate = round(estimate, 2)) %>%
+      pull()
+  lai_coef_label <- paste0("ŷ = ", coef[1], " - ", abs(coef[2]), "se")
+  se_labs <- se_label(lai)
+  rows <- paste("n (estimated effects) = ", nrow(lai))
+  xrng <- range(lai$st_err_d)[1]
+  yrng <- range(lai$d)[2]
+  annotations_df <- data.frame(x = xrng, y = yrng,
+                               labels = paste(dcor, '\n', lai_coef_label, '\n', 
+                                              se_labs, '\n', rows))
+
+(lai_plot <- lai_plot + geom_text(data = annotations_df, 
+                    mapping = aes(x = x, y = y, label = labels), 
+                    hjust = 'inward', vjust = 'inward'))
+  
+  ggsave(filename = '../output/figs/lai_se_d_plot.png', plot = lai_plot, 
+       width = 16, height = 9)
+
+
+
+```
+
+### implicit attitude effect sizes over time
+```{r}
+library(ggplot2)
+dat %>%
+  filter(outcome_type1 == "implicit attitudes") %>%
+  select(unique_study_id, year, outcome_type1, d, var_d) %>%
+  group_by(unique_study_id, year) %>%
+  summarise(d = mean(d),
+            std_err_d = sqrt(mean(var_d))) %>%
+  ggplot(aes(year, d)) +
+  geom_point() +
+  labs(title = "Implicit Attitude Effect Sizes Over Time") +
+  geom_smooth()
+```
+
+```{r}
+dat %>%
+  filter(outcome_type1 == "implicit attitudes") %>%
+  select(unique_study_id, year, outcome_type1, d, var_d) %>%
+  group_by(unique_study_id, year) %>%
+  summarise(d = mean(d),
+            std_err_d = sqrt(mean(var_d))) %>%
+  group_by(year) %>%
+  count() %>%
+  ggplot(aes(year, n)) +
+  geom_col() +
+  labs(title = "Implicit Attiutde Effect Count Over Time")
+```
+
+
+
+
+
+### Session info for reproducibility
+```{r echo=F}
+sessionInfo()
+```

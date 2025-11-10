@@ -1,0 +1,211 @@
+---
+title: "6-methods-check.Rmd"
+author: "Seth Green"
+date: "6/1/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+ 
+## Overview
+ 
+ This document will simulate a dataset for checking the paper's procedures for estimating Cohen's D (technically Glass's $\Delta$).
+
+```{r setup}
+set.seed(11111988) # for reproducibility
+
+library(knitr)
+library(rprojroot)
+
+wd <- rprojroot::find_rstudio_root_file()
+knitr::opts_knit$set(wd)
+knitr::opts_chunk$set(wd)
+```
+
+ 
+### Simulated dataset
+
+This code chunk is a record of how we created our simulated dataset. It is currently not set to be evaluated, because we already have created the dataset and don't wish to overwrite it. Set `eval=T`, and set a new seed, if you want to create a new dataset (this will overwrite the previous data).[^1]
+
+
+```{r sim_data, eval=FALSE}
+## Population -----------------------------------
+N <- 1000 # 1000 subjects
+treatment_assignment <- rbinom(N, 1, .5) # vector of treatment assignments ; 50% probability of being assigned to treatment
+
+## Outcomes -----------------------------------
+outcome_one <- rep(NA, N) # empty vector for continuous outcome, i.e., feelings thermometer towards outgroup
+outcome_one[treatment_assignment==0] <- rnorm(n = sum(treatment_assignment == 0),
+                                             mean = 3.5, sd = 0.5) # control outcomes for continuous variable
+outcome_one[treatment_assignment==1] <-rnorm(n = sum(treatment_assignment == 1),
+                                             mean = 4, sd = 1) # treatment outcomes 
+
+outcome_two <- rep(NA, N) # empty vector ford discrete outcome  e.g. writing letter of support for rights of outgroup
+outcome_two[treatment_assignment== 0] <- rbinom(n = sum(treatment_assignment == 0),
+                                                 size = 1, prob = 0.25) # 25% probability of writing letter in control group
+outcome_two[treatment_assignment == 1] <- rbinom(n = sum(treatment_assignment == 1),
+                                                 size = 1, prob = 0.75) # 75% probability of writing letter in treatment group
+
+## Control Variables -----------------------------------
+
+# non-predictive control variable
+age <- round(runif(n = N, min = 18, max = 22), digits = 0)
+# evenly distributed, independent of treatment assignment & outcome
+
+# predictive-control variable
+liberal_attitudes <- rep(NA, N)
+liberal_attitudes[outcome_one >= 5] <- rbinom(n = sum(outcome_one >= 5), 
+                                            size = 1, prob = 0.75)
+# 75% chance of identifying as liberal if subject's outcome score is 5 or >
+liberal_attitudes[outcome_one >= 3 & outcome_one < 5] <- 
+  rbinom(n = sum(outcome_one >= 3 & outcome_one < 5), 
+                                            size = 1, prob = 0.5) 
+# 50 % chance of identifying as liberal if subject's outcome is between 3 & 5
+liberal_attitudes[outcome_one < 3] <- rbinom(n = sum(outcome_one < 3),
+                                             size = 1, prob = 0.25) 
+# 25 % chance of identifying as liberal if subject's outcome score is < 3 
+
+# liberal_attitudes is unevenly distributed and predictive of the main outcome
+
+## combine vectors into a data frame and save
+sim_data <- data.frame(outcome_one, outcome_two,
+                  treatment_assignment,
+                  age, liberal_attitudes)
+
+
+saveRDS(object = sim_data, file = './data/sim_data.rds')
+```
+
+### Estimating Standard Deviation from Standard Error
+First, a note on Glass's $\Delta$ and Cohen's D. 
+
+Cohen's D standardizes by the standard deviation of the entire population's dependent variable scores. Glass's $\Delta$ standardizes on the standard deviation of _the control group._ This meta-analysis calculates Glass's $\Delta$ where possible -- e.g. where the standard deviation of the control group is provided or can be estimated. When it cannot -- for instance, when only statistics of comparison are provided, like t-tests or f-statistics -- this paper instead estimates Cohen's D, and assume equal variance between treatment and control groups.
+
+In this particular simulated dataset, that assumption is not met, so Glass's $\Delta$ and Cohen's D will be fairly far apart. 
+
+* This paper's formula for converting the standard error of the intercept to SD of the control group is
+$\frac{SE_{Y0} * \sqrt{(n_t - 1) * (n_c - 1)} } { \sqrt{(n_t -1) + (n_c -1)}}$
+
+Dividing $\beta$ by that estimate yields an estimate of Glass's $\Delta$. 
+
+These conversions were calculated in the original dataset.
+
+We now check that Glass's Delta can be recovered from standard error of the intercept of a regression.
+```{r, eval=TRUE}
+rm(list = ls()) # clear variables
+dat <- readRDS(file = '../data/sim_data.rds') # load data
+suppressMessages(attach(dat))
+
+# simple regression of outcome one on treatment assignment
+model <- summary(lm(outcome_one ~ treatment_assignment))
+
+## recover SD of control group from information we have here
+# First a sanity check -- does beta of treatment assignment == true ATE
+true_ATE <- mean(outcome_one[treatment_assignment == 1]) - 
+       mean(outcome_one[treatment_assignment == 0]) # 0.464
+
+# Verify that these are equivalent:
+all.equal(model$coefficients[2,1], true_ATE) 
+
+# Establish "true" Cohen's D and Glass's Delta as baseline 
+true_sd_control <- sd(outcome_one[treatment_assignment == 0]) # 0.5004
+true_overall_sd <- sd(outcome_one) # 0.829
+
+true_glass_delta <- true_ATE/ sd(outcome_one[treatment_assignment == 0]) #0.928
+true_cohens_d <- true_ATE / sd(outcome_one) # 0.56
+
+# Ns of treatment and control
+n_control <- length(outcome_one[treatment_assignment == 0])
+n_treatment <- length(outcome_one[treatment_assignment == 1])
+
+# standard error of intercept
+se_intercept <- model$coefficients[1,2] # 0.03529
+
+# estimate SD from SE_intercept
+sd_control_est <- se_intercept * sqrt((n_treatment - 1) * (n_control - 1)) /
+  sqrt((n_treatment - 1) + (n_control - 1))  # 0.557
+
+all.equal(sd_control_est, true_sd_control)
+```
+This is within an acceptaable margin of error.
+
+### T-test conversion
+* The established formula for converting a t-test to Cohen's D is:
+$$
+d = t * \sqrt{\frac{n_t + n_c}{n_t * n_c}}
+$$
+
+These conversions are calculated in `./functions/ResultsStandardizeR.R`.
+
+```{r}
+tstat <- model$coefficients[2,3]
+source('./functions/Results_standardizeR.R')
+t_to_d <- stand_result(eff_type = 't_test', raw_effect_size = tstat,
+                       n_t = n_treatment, n_c = n_control)$d
+# 0.583  
+all.equal(t_to_d, true_cohens_d) # within 4%
+```
+### F-statistic conversion
+
+The established formula for converting an F statistic to Cohen's D is:
+$$
+\sqrt{\frac{F * (n_t + n_c)}{n_t * n_c}}
+$$
+This conversion is identical to the T test conversion, except that the F test within the square root; this works because the F test is equal to the T test squared,assuming there are no covariates. However, adding covariates changes the F-statistic and renders the  conversion formula unreliable.
+
+```{r}
+fstat <- model$fstatistic[[1]] # 84.92478
+tstat <- model$coefficients[2,3] # 9.215464
+# F statistic is 90.14, t-test is 9.215464
+# double-check that F-statistic equals T-test squared
+all.equal(sqrt(fstat), tstat) # TRUE
+
+## Calculate Cohen's D
+stand_result(eff_type = 'f_test', raw_effect_size = fstat,
+             n_t = 491, n_c = 509)$d # same as t-test conversion answer.
+
+
+## add controls:
+f_val_age_control <- summary(lm(outcome_one ~ treatment_assignment + age))$fstatistic[[1]]
+f_val_attitude_control <- summary(lm(outcome_one ~ treatment_assignment + liberal_attitudes))$fstatistic[[1]]
+f_val_both_controls <- summary(lm(outcome_one ~ treatment_assignment +
+                                    age + liberal_attitudes))$fstatistic[[1]]
+
+all.equal(sqrt(f_val_age_control), tstat) # 41% difference
+all.equal(sqrt(f_val_both_controls), tstat) # 48% difference
+
+
+```
+
+Conclusion: converting from F-test to Cohen's D is not reliable in the presence of control variables.
+
+
+*Dichotomous variables*
+When possible, this paper converted difference in proportions to Cohen's D via the following:
+$$
+\frac{P_T - P_C}{\sqrt{P_C * (1 - P_C)}}
+$$
+
+As an example,  if the effect size is 10 percentage points, and the base rate for the control group is 0.5 then d would be .1/.5 = 0.2:
+$$
+\frac{0.6 - 0.5}{\sqrt{0.5 * (1 - 0.5)}} = \frac{0.1}{\sqrt{.25}} = \frac{0.1}{0.5} = 0.2
+$$
+For our simulated dataset, this wouold be calculated as follows:
+
+```{r}
+prop_treat <- sum(outcome_two[treatment_assignment == 1]) /length(outcome_two[treatment_assignment == 1])
+prop_control <- sum(outcome_two[treatment_assignment == 0]) /length(outcome_two[treatment_assignment == 0])
+
+dichotomous_d <- (prop_treat - prop_control) / sqrt(prop_control * (1 -prop_control))
+```
+
+If instead odds ratios (or log odds ratios) were provided, Cohen's D was calculated as follows:
+$$
+d= \frac{log(OR) * \sqrt{3}}{\pi}
+$$
+### Eta squared and partial eta squared
+
+$$
+2 * \frac{\sqrt{\eta^2}}{\sqrt{1 - \eta^2}}
+$$
+

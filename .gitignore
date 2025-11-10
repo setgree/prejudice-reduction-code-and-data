@@ -1,0 +1,29 @@
+# Data files
+data/
+!data/.gitkeep
+
+# Output and results
+output/
+!output/.gitkeep
+
+# Generated HTML files
+*.html
+
+# Generated figures
+*.png
+
+# R files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Intermediate files
+*.log
+*.aux
+*.out

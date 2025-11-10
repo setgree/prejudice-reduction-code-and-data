@@ -1,0 +1,1300 @@
+---
+title: "Prejudice Reduction: Progress and Challenges (Paluck, Porat, Clark and Green 2020)"
+subtitle: "Results Replication"
+output:
+  html_document:
+    df_print: paged
+    theme: spacelab
+    number_sections: no
+    smart: true
+    toc: true
+    toc_float:
+      collapsed: true
+    toc_depth: 3
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, warning=FALSE, message=FALSE, include=FALSE}
+rm(list = ls())
+
+knitr::opts_knit$set(echo = FALSE,
+                      cache = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      results = 'asis', 
+                     root.dir = rprojroot::find_rstudio_root_file())
+
+
+```
+
+Load Libraries
+```{r libraries, echo=TRUE, include=T, results='hide', message=FALSE, warning=FALSE}
+library(dplyr)
+library(broom)
+library(janitor)
+library(scales)
+library(forcats)
+library(knitr)
+library(kableExtra)
+library(metafor)
+library(purrr)
+library(readr)
+library(stringr)
+library(tidyr)
+```
+
+
+Load Data
+```{r load_data, warning=FALSE, message=FALSE}
+## main dataset -----------------------------------
+dat <- read_rds('../data/prejudice_meta_data.rds')
+
+## meta analytic results; created in 3-sub-group.R -----------------------------------
+overall <- read_csv("../data/meta-analytic/overall/overall_meta.csv") # e.g., loads overall meta-analytic results
+iv <- read_csv("../data/meta-analytic/overall/intervention_approach.csv")
+iv_x_pt <- read_csv("../data/meta-analytic/overall/intervention_approach_x_prejudice_type.csv")
+iv_x_o <- read_csv("../data/meta-analytic/overall/intervention_approach_x_outcome_type.csv") 
+iv_x_tm <- read_csv("../data/meta-analytic/overall/intervention_approach_x_time_measurement.csv")
+iv_x_s <- read_csv("../data/meta-analytic/overall/intervention_approach_x_setting.csv")
+iv_x_it <- read_csv("../data/meta-analytic/overall/intervention_approach_x_intervention_type.csv")
+iv_large <- read_csv("../data/meta-analytic/overall/intervention_approach_t>e78_drop_cluster.csv")
+outcome <- read_csv("../data/meta-analytic/overall/outcome_type.csv")
+lt <- read_csv("../data/meta-analytic/overall/light_touch.csv")
+lt_x_tm <- read_csv("../data/meta-analytic/overall/light_touch_x_time_measurement.csv")
+ntc <- read_csv("../data/meta-analytic/overall/n_treatment_category_drop_cluster.csv")
+ntc_x_lt <- read_csv("../data/meta-analytic/overall/n_treatment_category_x_light_touch_drop_cluster.csv")
+ntcl <- read_csv("../data/meta-analytic/lab/n_treatment_category_drop_cluster_lab_studies.csv")
+nto <- read_csv("../data/meta-analytic/online/n_treatment_category_drop_cluster_online_studies.csv")
+ntc_x_o <- read_csv("../data/meta-analytic/overall/n_treatment_category_x_outcome_type_drop_cluster.csv")
+ml_large <- read_csv("../data/meta-analytic/overall/intervention_approach_many_lab_t>e78_drop_cluster.csv")
+ml <- read_csv("../data/meta-analytic/overall/intervention_approach_many_lab.csv")
+lai_outcome_no_labs <- read_csv('../data/meta-analytic/overall/outcome_type_lai_studies.csv')
+lai_outcome_with_labs <- read_csv('../data/meta-analytic/overall/outcome_type_many_lab_lai_studies.csv')
+lai_overall_no_labs <- read_csv('../data/meta-analytic/overall/overall_meta_lai_studies.csv')
+lai_overall_with_labs <- read_csv('../data/meta-analytic/overall/overall_meta_many_lab_lai_studies.csv')
+## create percentage data frames for examining groups of studies -----------------------------------
+n_studies <- n_distinct(dat$unique_study_id) # n unique studies
+
+prejudice_perc <- 
+  dat %>% 
+      pivot_longer(cols = prejudice_type1:prejudice_type5, 
+                   names_repair = "unique",
+                   values_to = "prejudice_type", 
+                   values_drop_na = T) %>% 
+  distinct(unique_study_id, prejudice_type) %>% 
+  count(prejudice_type, sort = T) %>% 
+  mutate(perc = n / n_studies) %>% 
+  select(-n)
+
+iv_perc <- 
+dat %>% 
+  select(unique_study_id, intervention_approach1, intervention_approach2) %>% 
+  pivot_longer(intervention_approach1:intervention_approach2, values_drop_na = T) %>% 
+  distinct(unique_study_id, value) %>% # one unique observation / study
+  count(value, sort = T) %>% 
+  mutate(perc = n / n_studies) %>% 
+  select(-n)
+
+setting_perc <- 
+dat %>% 
+  select(unique_study_id, starts_with("setting")) %>% 
+  pivot_longer(cols = setting1:setting4, 
+               values_to = "setting", values_drop_na = T) %>% 
+  distinct(unique_study_id, setting) %>% # colllapse on STUDY level; different than plot
+  count(setting, sort = T) %>% 
+  mutate(perc = n / n_studies) %>% 
+  select(-n)
+
+
+outcome_perc <- 
+dat %>% 
+  select(unique_study_id, outcome_type1:outcome_type2) %>% 
+        pivot_longer(cols = outcome_type1:outcome_type2, 
+                   names_repair = "unique",
+                   values_to = "outcome_type", 
+                   values_drop_na = T) %>% 
+  distinct(unique_study_id, outcome_type) %>% # one unique observation / study
+  count(outcome_type, sort = T) %>% 
+  mutate(perc = n / n_studies) %>% 
+  select(-n)
+```
+
+
+
+Functions for Presenting Tables Cleanly
+```{r functions}
+sable <- function(x, ...) {
+  kable(x, align = 'c', ...) %>%
+    kable_styling(c("hover"), full_width = T)
+}
+
+iv_large_n <- function(approach){
+  dat %>%
+    filter(n_treatment >= 78) %>%  # big studies only
+    pivot_longer(cols = intervention_approach1:intervention_approach2, # double count
+                 values_to = "intervention_approach", values_drop_na = T) %>% 
+    distinct(unique_study_id, intervention_approach, .keep_all = T) %>% 
+    filter(intervention_approach == approach) %>% 
+    select(unique_paper_id, unique_study_id, intervention_approach, author, n_treatment, d) %>% 
+    sable()
+}
+
+quintile_results_table <- function(df, title){
+  df %>%
+    drop_na(n_treatment_category) %>%
+    select(1, 3, 4, 5, 6) %>%
+    mutate(n_treatment_category = str_replace(n_treatment_category, "≤", "$\\\\leq$"),
+           n_treatment_category = str_replace(n_treatment_category, "≥", "$\\\\geq$"),) %>%
+    mutate_if(is.numeric, ~round(., 3)) %>%
+    kable(caption = title,
+          booktabs = T,
+          escape = F, 
+          align = 'c',
+          format = "latex",
+          col.names = c("Sample Size", "Number of Studies", "Number of Articles", 
+                        "Effect Size", "Standard Error")) %>%
+    cat()
+}
+
+quintile_results_present <- function(df, title){
+  df %>% 
+    drop_na(n_treatment_category) %>% 
+    select(1, 3, 4, 5, 6, 7) %>% 
+    mutate_if(is.numeric, ~round(., 3)) %>% 
+    sable(caption = title, 
+          col.names = c("Sample Size", "Number of Studies", 
+                        "Number of Articles", "Effect Size", 
+                        "Standard Error", "P-value"))
+}
+
+present_results <- function(df, type = NULL, title = "Intervention Approach"){
+  if(!is.null(type)){
+      df %>%
+  select(1, 2, 4, 5, 6, 7) %>%
+  mutate_if(is.numeric, ~round(., 2)) %>%
+  sable(col.names = c("Intervention Approach", type, "# of Studies", "# of Articles", "d", "SE"))
+  } else{
+  df %>% 
+    select(1, 3, 4, 5, 6) %>% 
+    mutate_if(is.numeric, ~round(., 2)) %>% 
+    sable(col.names = c(title, "# of Studies", "# of Articles", "d", "SE"))
+  }
+
+}
+
+q_table <- function(df){
+  df %>% 
+    mutate_at(vars(one_of("perc")), ~scales::label_percent()(.)) %>% 
+    mutate_if(is.numeric, ~round(.,2)) %>% 
+    sable()
+}
+
+extract_meta_data <- function(data){
+  reg_coef <- unclass(data)$beta
+  se <- unclass(data)$se
+  z_value = unclass(data)$zval
+  out <- tibble(reg_coef = reg_coef, se = se, z_value = z_value)
+  return(out)
+}
+
+extract_test_stat <- function(x){
+  unclass(x)$zval
+}
+
+add_parentheses <- function (vector) {
+  out <- as.vector(paste0("(", vector, ")"))
+  out
+}
+
+two_digits <- function (data){
+  out <- as.vector(trimws(format(round(data, 2), nsmall = 2)))
+  out
+}
+
+three_digits <- function (data){
+  out <- as.vector(trimws(format(round(data, 3), nsmall = 3)))
+  out
+}
+```
+
+## Abstract
+including an additional two years to meet the end of the previous review's search, comprise 72\% laboratory experiments, 22\% online experiments, and 6\% experiments conducted in field settings
+
+
+```{r n_intervention_type}
+ dat %>%
+   select(unique_study_id, intervention_type1, intervention_type2) %>%
+   pivot_longer(intervention_type1:intervention_type2, values_to = "intervention_type", values_drop_na = T) %>%
+   distinct(unique_study_id, intervention_type) %>% # one unique observation / study
+   count(intervention_type, sort = T) %>%
+   mutate(perc = n / n_studies) %>%
+   q_table()
+```
+
+ ...and perspective-taking (25\% of all studies)
+ 
+```{r n_perspective taking}
+ iv_perc %>%
+   filter(value == "cognitive and emotional training") %>%
+   q_table()
+```
+
+
+ approximately 33\% of all studies tested the effect of imagined, not actual, intergroup contact.
+```{r perc_imag}
+ iv_perc %>%
+   filter(value == "extended and imaginary contact") %>%
+   q_table()
+```
+
+ By contrast, 7\% of all studies test face-to-face or online intergroup contact with relatively more time-intensive interventions.
+```{r perc_ic}
+ iv_perc %>%
+   filter(value == "interpersonal contact") %>%
+   q_table()
+```
+
+ theories of real world intergroup contact, peer influence, and cooperative intergroup approaches (16\% of all studies)
+```{r iv_approach}
+ iv_perc %>%
+   filter(value %in% c("cooperative learning", "peer influence, discussion/dialogue", "interpersonal contact")) %>%
+   adorn_totals() %>%
+   q_table()
+```
+
+ for assembling the total sample of 416 studies
+ ```{r n_studies}
+ ```
+
+## Paper
+### Introduction
+Using replicable search criteria, we assembled 418 experimental studies reported in 309 manuscripts...
+```{r n_studies}
+dat %>% 
+  summarise(n_studies = n_distinct(unique_study_id),
+            n_manuscripts = n_distinct(unique_paper_id)) %>% 
+  sable()
+```
+
+### Trends in theory and intervention in the past decade
+The modal study – accounting for one-third of all prejudice reduction research – tests an intervention that involves extended or imagined contact with outgroups
+```{r perc_imag}
+```
+
+The next largest group of studies involves some kind of cognitive or emotional training ... are tested in more than one quarter of recent scholarly work.
+```{r emotion_train_perc}
+iv_perc %>% 
+  slice(1:2) %>% 
+  q_table()
+```
+
+Social categorization interventions ... constitute the third largest group of studies.
+```{r social_cat_perc}
+iv_perc %>% 
+  slice(1:3) %>% 
+  q_table()
+```
+### Theoretical and methodological criteria for study selection
+
+### Coding and Reliability
+In total we recovered 309 manuscripts from our search that qualified methodologically and theoretically.
+```{r n_manuscript}
+dat %>% 
+  summarise(n_manuscript = n_distinct(unique_paper_id)) %>% 
+  sable()
+```
+
+those experiments in the highest quintile of participants in the intervention arm; on average this is 78 or more participants
+```{r largest_quintile}
+dat %>% 
+  distinct(n_treatment_category) %>% 
+  filter(str_detect(n_treatment_category, "≥")) %>% 
+  sable()
+```
+
+### Overview of Studies in the Meta-Analytic Database
+The database spans the years 2007-2019,
+```{r db_year_span}
+dat %>% 
+  select(year) %>% 
+  summarise(min(year),
+            max(year)) %>% 
+  sable()
+```
+
+
+encompassing 309 manuscripts that describe 418 studies, which report 1,292 distinct point estimates
+```{r total_counts}
+dat %>% 
+  summarise(n_manuscript = n_distinct(unique_paper_id),
+            n_studies = n_distinct(unique_study_id),
+            n_estimate = nrow(.)) %>% 
+  sable()
+```
+
+The modal category is racial and ethnic prejudice, which accounts for nearly half of all studies.
+```{r race_prev}
+prejudice_perc %>% 
+  filter(prejudice_type == "race/ethnicity") %>% 
+  q_table()
+```
+
+
+This category would encompass almost 60\% of all studies were it expanded to include nationality and religion
+```{r race_nat_rel_prev}
+dat %>% 
+      pivot_longer(cols = prejudice_type1:prejudice_type5, 
+                   names_repair = "unique",
+                   values_to = "prejudice_type", 
+                   values_drop_na = T) %>% 
+  filter(prejudice_type %in% c("race/ethnicity", "nationality", "religion")) %>% # keep only these
+  distinct(unique_study_id) %>% # don't double count
+  summarise(perc = n_distinct(unique_study_id) / n_studies) %>% # n relevant / n total
+  q_table()
+```
+
+Roughly twenty percent of all studies focus on physical attributes related to ability, age, and body size. 
+```{r abil_age_body_size_prev}
+prejudice_perc %>% 
+  filter(prejudice_type %in% c("ability", "age", "body size")) %>% 
+  adorn_totals() %>% 
+  q_table()
+```
+
+Approximately 13\% percent of studies focus on and sexuality and gender.  
+```{r sex_gender_prev}
+prejudice_perc %>% 
+  filter(prejudice_type %in% c("sexuality", "transgender / gender")) %>% 
+  adorn_totals() %>% 
+  q_table()
+```
+
+
+Relatively few studies nowadays generate fictive (minimal) groups to study prejudice reduction.
+```{r minimal_prev}
+prejudice_perc %>% 
+  filter(prejudice_type %in% c("minimal/artificial")) %>% 
+  q_table()
+```
+
+
+Nearly two-thirds of all studies attempt to reduce the prejudices of college students.
+```{r perc_college}
+setting_perc %>% 
+  filter(setting == "college") %>% 
+  q_table()
+```
+
+Another ten percent focus on students in grade school or high school. 
+```{r perc_school}
+setting_perc %>% 
+  filter(setting %in% c("elementary (grades 1-5)", "middle/high (grades 6-12)")) %>% 
+  adorn_totals() %>% 
+  q_table()
+```
+
+Almost one in five studies deploy interventions aimed at online respondents
+```{r online_perc}
+setting_perc %>% 
+  filter(setting == "Online (mturk or other)") %>% 
+  q_table()
+```
+
+The relatively small remainder underscores how rarely researchers study adults outside universities: members of the community (5.5 percent), those in workplaces (2.2 percent), or religious congregants (0.5 percent). 
+```{r setting_else_perc}
+setting_perc %>% 
+  filter(setting %in% c("community", "work", "faith-based")) %>% 
+  q_table()
+```
+
+Two-thirds of all study outcomes are some kind of explicit survey measure of attitudes or beliefs.
+```{r perc_explicit}
+## here we divide by the sum of all *outcomes*, as opposed to previously in the percentages where we divided by the sum of all *studies*
+dat %>% 
+  select(unique_study_id, starts_with("outcome_type")) %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  count(outcome_type, sort = T) %>% 
+  mutate(perc = n / sum(n)) %>% 
+  filter(outcome_type == "explicit attitudes OR beliefs") %>% 
+  select(-n) %>% 
+  q_table()
+```
+Measures of implicit attitudes and behavioral intentions are much less common, at less than 10\% each, with a smattering of studies reporting survey measures of emotion and empathy. Only 7\% of outcomes are behavioral.
+```{r perc_implicit}
+dat %>% 
+  select(unique_study_id, starts_with("outcome_type")) %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               values_to = "outcome_type", values_drop_na = T) %>% 
+  count(outcome_type, sort = T) %>% 
+  mutate(perc = n / sum(n)) %>% 
+  filter(outcome_type %in% c("implicit attitudes", "behavioral intentions", "emotion", "empathy", "behavior")) %>% 
+  select(-n) %>% 
+  q_table()
+```
+
+Prior to 2010, fewer than 16 studies were generated annually, 
+```{r pre_2010_n}
+dat %>% 
+  distinct(unique_study_id, year) %>% 
+  count(year) %>% 
+  filter(year < 2010) %>% 
+  sable()
+```
+
+but by 2018 and 2019, the annual production was 58
+```{r 2018_post_n}
+dat %>% 
+  distinct(unique_study_id, year) %>% 
+  count(year) %>% 
+  filter(year >= 2018) %>% 
+  sable()
+```
+
+field experiments never account for more than 4 studies in any year.
+```{r n_field}
+dat %>%
+  select(unique_study_id, year, intervention_type1, intervention_type2) %>%
+  pivot_longer(cols = intervention_type1:intervention_type2,
+               values_to = "intervention_type", 
+               values_drop_na = T) %>%
+  distinct(unique_study_id, year, intervention_type) %>%
+  count(year, intervention_type) %>%
+  filter(intervention_type == "field") %>%
+  filter(n == max(n)) %>% 
+  sable()
+```
+
+#### Figure 1 Caption
+for all percentages adds up to more than the total number of studies in the meta-analysis, N = 418)
+```{r n_studies}
+```
+
+For example, 35\% of all studies report more than one type of outcome.
+```{r fig1, message=FALSE, warning=FALSE}
+dat %>% 
+  select(unique_study_id, starts_with("outcome_type")) %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               values_to = "outcome_type", values_drop_na = T) %>% 
+  distinct(unique_study_id, outcome_type) %>% # unique outcomes types in a study
+  group_by(unique_study_id) %>% 
+  mutate(n = n()) %>% # number of unique outcomes in a study
+  ungroup() %>% 
+  distinct(unique_study_id, .keep_all = T) %>% # n studies
+  count(n) %>% ## here n is the number of outcomes and nn is the count
+  mutate(perc = nn / sum(nn)) %>% 
+  mutate(one_effect = ifelse(n == 1, T, F)) %>% 
+  group_by(one_effect) %>% 
+  summarise(perc = sum(perc)) %>% 
+  filter(one_effect == FALSE) %>% 
+  q_table()
+```
+
+
+### Meta-Analytic Results for All Studies Combined
+Our random effects meta-analysis of all prejudice-reduction experiments from 2007-2019 shows an effect size of d = 0.357, with a standard error of 0.02.
+```{r overall_effect}
+overall %>% 
+  select(beta, se, pval) %>% 
+  mutate_if(is.numeric, ~round(., 3)) %>% 
+  sable()
+```
+
+Individuals who rated on average a 40 toward Black people, for example, which indicates a mildly negative feeling, would on average be moved approximately 8 points to a rating of 48 ... using the standard deviation of 21.2
+```{r}
+(48 - 40) / 21.2
+```
+
+To obtain d = 0.357, ... and we are able to reject a null of no treatment effect at p < .0001.
+```{r overall_effect}
+```
+
+However, Table 2 demonstrates a powerful inverse relationship between study size and effect size. Restricting attention solely to the quintile of smallest studies, the 74 studies that allocate 25 or fewer subjects to the treatment condition, we obtain a meta-analytic estimate of d = 0.61 (SE = 0.05).
+```{r smallest_quintile_effect}
+ntc %>% 
+  slice(1) %>% 
+  quintile_results_present("Smallest 20% of Studies")
+```
+
+This large effect size would on average move a person who feels mildly negatively toward Black people at 40, to a solidly neutral feeling of 53.
+```{r}
+(53 - 40) / 21.2
+```
+
+By contrast, the 73 studies in the highest quintile of study population, which allocate 78 or more subjects to the treatment group, generate a meta-analytic estimate of d = 0.19 (SE = 0.02).. 
+```{r largest_quintile_effect}
+ntc %>% 
+  slice(5) %>% 
+  quintile_results_present("Largest 20% of studies")
+```
+
+These larger studies predict that on average, interventions would change feelings toward Black people in a positive direction but only by approximately 4 points on the scale, such that people who started out feeling 40 would still rate their feelings as mildly negative (a 44) following an intervention.
+```{r}
+(44 - 40) / 21.2
+```
+
+
+The relationship between our meta-analytic effect size and the size of a study's treatment group is highly significant.  (p < .01)
+```{r}
+dat %>% 
+  group_by(unique_paper_id, unique_study_id) %>%
+  dplyr::summarise(d = mean(d),
+                   var_d = mean(var_d),
+                   n_treatment = mean(n_treatment),
+                   var_d = mean(var_d)) %>% 
+  ungroup() %>% 
+  mutate(st_err_d = sqrt(var_d)) %>% 
+  do(model = lm(d ~ st_err_d, data = .)) %>% 
+  broom::tidy(model) %>% 
+  mutate_if(is.numeric, ~round(., 3))
+```
+
+the ANES recorded that average feeling thermometer responses went from 30.9 (cold) to 60.7 (warm), which is a d of 1.10.
+```{r}
+(60.7 - 30.9) / 27.4 ## (SD from 2016 ANES)
+```
+
+
+```{r all_studies_tab}
+ntc %>%
+  quintile_results_table("All Studies by Quintile Group")
+```
+
+
+### Which prejudice reduction interventions "work"?
+#### Applied interventions
+#### Anti-bias, multicultural, and moral education
+We found 20 experiments testing anti-bias, multicultural, and moral education programs across 18 papers. On average this group of approaches yielded an effect size of d = .30 (SE = .06).
+```{r antibias_effect}
+iv %>% 
+  filter(intervention_approach == "multicultural, antibias, moral education") %>% 
+  present_results()
+```
+
+However, when we restrict our sample to studies with a treatment n of 78 or more, we find only 5, and the effect size drops from 0.30 to 0.23 (SE = 0.08)
+```{r large_anti_bias_effect}
+iv_large %>% 
+  filter(intervention_approach == "multicultural, antibias, moral education") %>% 
+  present_results()
+```
+
+These interventions for the most part measured explicit attitudes as outcomes (17 studies, which yielded an average d of 0.28, SE = 0.07); just 4 studies measured behavioral outcomes.
+```{r antibias_explicit}
+iv_x_o %>% 
+  filter(intervention_approach == "multicultural, antibias, moral education") %>% 
+  present_results("Outcome Type")
+```
+
+only 5 of the experiments testing their efficacy were conducted in actual educational or workplace settings (12 were conducted in laboratory settings, and another 3 were tested with online experiments).
+
+```{r antibias_ia}
+iv_x_it %>% 
+  filter(intervention_approach == "multicultural, antibias, moral education") %>% 
+  present_results("Intervention Approach")
+```
+
+#### Cross-Cultural and Intercultural Trainings & Cooperative Learning
+
+#### Diversity training
+After including studies in this category only if they self-identified as interventions of diversity, sensitivity, or cultural competence training, we count just six experimental studies reported in six manuscripts during the last decade. The average meta-analytic effect size of these few studies is a d of 0.3 (SE = 0.16).
+```{r dv_training_overall}
+iv %>% 
+  filter(intervention_approach == "Diversity Trainings") %>% 
+  present_results()
+```
+
+However, if we restrict the sample of diversity training studies to those with the number of treatment participants in the quintile with the largest participant samples, there are two studies.
+```{r dv_training_large}
+(dv_large <- 
+dat %>% 
+  pivot_longer(cols = intervention_approach1:intervention_approach2, # double count
+               values_to = "intervention_approach", values_drop_na = T) %>% 
+  filter(n_treatment > 78,
+         intervention_approach == "Diversity Trainings")) %>% 
+  distinct(title, author, year) %>% 
+  sable()
+```
+
+The average effect of those studies ... is substantially lower (d = 0.07). 
+```{r dv_large_avg_d}
+iv_large %>% 
+  filter(intervention_approach == "Diversity Trainings") %>% 
+  present_results()
+```
+
+
+Four of the studies coded as diversity training were actually conducted in a university setting, and these are the studies that drive up the average effect size--they are associated with a d of 0.45 (SE = 0.23).
+```{r dv_college}
+iv_x_s %>% 
+  filter(intervention_approach == "Diversity Trainings") %>% 
+  present_results("Setting")
+```
+
+
+### Basic Reseach Interventions
+#### Cognitive and Emotional training / perspective-taking
+
+cognitive and emotional training comprise 107 studies from 75 manuscripts over the past decade. As for their apparent effects on prejudice reduction, meta-analysis reveals a substantial average effect size of d = 0.35 (SE = 0.05).
+```{r emo_effect}
+iv %>% 
+  filter(intervention_approach == "cognitive and emotional training") %>% 
+  present_results()
+```
+
+However, when examining the studies with a treatment N of over 78, we are left with just 25 studies that reveal an average effect size of d = 0.22 (SE = 0.05)
+```{r emo_large}
+iv_large %>% 
+  filter(intervention_approach == "cognitive and emotional training") %>% 
+  present_results()
+```
+
+
+The training interventions in the full sample of cognitive and emotional training studies addressed a broad array of prejudices but focused primarily on race and ethnic prejudice (d = 0.35, SE = 0.06, N = 63)
+```{r emo_pt}
+iv_x_pt %>%
+  filter(intervention_approach == "cognitive and emotional training",
+         prejudice_type == "race/ethnicity") %>% 
+  present_results("Prejudice Type")
+```
+
+and on explicit attitudes and beliefs (d = 0.26, SE = .05, N = 64).
+```{r emo_o}
+iv_x_o %>%
+  filter(intervention_approach == "cognitive and emotional training",
+         outcome_type == "explicit attitudes OR beliefs") %>% 
+  present_results("Outcome Type")
+```
+
+The vast majority of the studies involve college students (d = 0.37, SE = 0.06, N = 72)...
+```{r emo_sett}
+iv_x_s %>% 
+  filter(intervention_approach == "cognitive and emotional training",
+         setting == "college") %>% 
+  present_results("Setting")
+```
+
+...take place in the laboratory (d = 0.39, SE = 0.06, N = 79)
+```{r emo_it}
+iv_x_it %>% 
+  filter(intervention_approach == "cognitive and emotional training",
+         intervention_type == "lab") %>% 
+  present_results("Intervention Type")
+```
+
+
+...and measure prejudice immediately after the intervention's conclusion (d = 0.33, SE = 0.05, N = 98).
+```{r emo_tm}
+iv_x_tm %>% 
+  filter(intervention_approach == "cognitive and emotional training",
+         time_measurement == "same day") %>% 
+  present_results("Time Measurement")
+```
+
+
+#### Value Consistency  and self-worth
+
+Our meta-analysis reveals 35 experiments that can speak to values and self-consistency, across 22 manuscripts. The average effect size is d = 0.41 (SE = 0.09).
+```{r self_overall}
+iv %>% 
+  filter(intervention_approach == "value consistency and self-worth") %>% 
+  present_results()
+```
+
+These interventions have never been tested in the field (in the lab the effect size is higher, d = 0.50, SE = 0.14, N = 20, than it is online, d = 0.30, SE = 0.10, N = 15).
+```{r self_iv}
+iv_x_it %>% 
+  filter(intervention_approach == "value consistency and self-worth") %>% 
+  present_results("Intervention Type")
+```
+
+The strongest effects apply to changes in explicit attitudes (d = 0.45, SE = 0.09, N = 30) and emotional responses (d = 0.42, SE = 0.20, N = 4), as opposed to behavioral intentions (d = 0.06, SE = 0.12, N = 5)
+```{r self_outcomes}
+iv_x_o %>% 
+  filter(intervention_approach == "value consistency and self-worth") %>% 
+  present_results("Outcome Type")
+```
+
+Again, when we restrict the sample to studies with a treatment n greater or equal to 78, the number of studies drops to 5, and the average effect size becomes d = 0.29 (SE = 0.17).
+```{r}
+iv_large %>% 
+  filter(intervention_approach == "value consistency and self-worth") %>% 
+  present_results()
+```
+
+
+#### Peer influence, discussion, and dialogue
+Of the 40 peer influence studies from 31 manuscripts in the past decade, the average prejudice reduction effect was more modest than for other approaches, with a d of 0.27, SE = 0.07.
+```{r}
+iv %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue") %>% 
+  present_results()
+```
+
+Further restricting the sample to the 10 studies whose treatment n is greater than 78, we find a much smaller average effect: d = 0.2, SE = 0.05.
+```{r}
+iv_large %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue") %>% 
+  present_results()
+```
+
+The most successful prejudices addressed were towards immigrants, asylum seekers and refugees (d = 0.34, SE = 0.11, N = 10) and toward LGBT individuals (d = 0.39, SE = .11, N = 11).
+```{r}
+iv_x_pt %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue",
+         prejudice_type %in% c("immigrants/asylum seekers/refugees", "sexuality")) %>% 
+  present_results("Prejudice Type")
+```
+
+Eleven studies measured behavior (d = 0.63, SE = 0.2, N = 4) or behavioral intentions (d = 0.38, SE = 0.03, N = 6) 
+```{r}
+iv_x_o %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue",
+         outcome_type %in% c("behavior", "behavioral intentions")) %>% 
+  present_results("Outcome Type")
+```
+ 
+Another promising result is that the effect of peer influence measured at least one day after the intervention is on average stronger than that measured immediately following the intervention (d = 0.31, SE = 0.08, vs. d = 0.26, SE = 0.08) ... measuring effects at minimum a day after the intervention was small compared to immediate measurement (7 vs. 34 studies, in this case)
+```{r}
+iv_x_tm %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue") %>% 
+  present_results("Time Measurement")
+```
+
+Peer influence studies were most often carried out in school or college settings (27 studies), but also in community and online settings (13 studies).
+```{r}
+iv_x_s %>% 
+  filter(intervention_approach == "peer influence, discussion/dialogue") %>% 
+  present_results("Setting")
+```
+
+#### Social categorization
+We identified 59 experimental studies within 43 papers from the past decade that tested social categorization interventions, yielding a sizeable overall average meta-analytic effect size of d = 0.37, SE = 0.05. 
+```{r}
+iv %>% 
+  filter(intervention_approach == "social categorization") %>% 
+  present_results()
+```
+
+Forty-two of these studies were conducted in the lab, which produces a larger average effect (d = 0.44, SE = 0.07) than online experiments (d = 0.22, SE = 0.07, N = 16).
+```{r}
+iv_x_it %>% 
+  filter(intervention_approach == "social categorization") %>% 
+  present_results("Intervention Type")
+```
+
+We also find that social categorization interventions are most likely to measure explicit attitudes as an outcome (d = 0.36, SE = 0.07, N = 45), but also implicit attitudes (d = 0.34, SE = 0.08, N = 12).
+```{r}
+iv_x_o %>% 
+  filter(intervention_approach == "social categorization") %>% 
+  arrange(desc(n_effect_sizes)) %>% 
+  slice(1:2) %>% 
+  present_results("Outcome Type")
+```
+
+
+When we seek to restrict our attention to studies with treatment samples of 78 or over, we are left with only 5 studies (d = 0.31, SE = 0.15).
+```{r}
+iv_large %>% 
+  filter(intervention_approach == "social categorization") %>% 
+  present_results()
+```
+
+
+#### Entertainment
+We identified only 12 studies in the past decade that used entertainment interventions. Of these 12, the average meta-analytic effect is quite strong, d = 0.43, SE = 0.07.
+```{r}
+iv %>% 
+  filter(intervention_approach == "entertainment") %>% 
+  present_results()
+```
+ 
+The studies mostly measured explicit attitudes...
+```{r}
+iv_x_o %>% 
+  filter(intervention_approach == "entertainment") %>% 
+  arrange(desc(n_effect_sizes)) %>% 
+  slice(1) %>% 
+  present_results("Outcome Type")
+```
+
+...and only four studies measured outcomes after some time passed.
+```{r}
+iv_x_tm %>% 
+  filter(intervention_approach == "entertainment",
+         time_measurement == "day after or more") %>% 
+  present_results("Time Measurement")
+```
+
+Five entertainment studies had a treatment sample of treatment participants of 78 or over. These studies report a promising average effect size of d = 0.38, SE = 0.07.
+```{r}
+iv_large %>% 
+  filter(intervention_approach == "entertainment") %>% 
+  present_results()
+```
+
+
+#### Face-to-Face Contact
+The group of experiments in our current review numbered only 28, across 27 manuscripts. 
+```{r}
+iv %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  present_results()
+```
+
+
+Across the 28 experimental studies randomizing face-to-face contact over the last decade, the average effect is d = 0.28, SE = 0.05.
+```{r}
+iv %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  present_results()
+```
+
+The studies were divided roughly between those examining impacts on attitudes regarding race and ethnicity (d = 0.10, SE = 0.07, N = 9) and those examining prejudice toward LGBT individuals (d = 0.22, SE = 0.10, N = 5).
+```{r}
+iv_x_pt %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  arrange(desc(n_effect_sizes)) %>% 
+  slice(1:2) %>% 
+  present_results("Prejudice Type")
+```
+
+...the majority of studies took place in a middle, high school, or college setting.
+```{r}
+iv_x_s %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  present_results("Setting")
+```
+
+
+Eighteen manuscripts report on studies from the lab, and ten report from the field.
+```{r}
+iv_x_it %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  arrange(desc(n_effect_sizes)) %>% 
+  present_results("Intervention Type")
+```
+
+The group of studies (8) that measure outcomes at least one day after the intervention report a reduced effect size of d = 0.25, SE = 0.13. 
+```{r}
+iv_x_tm %>% 
+  filter(intervention_approach == "interpersonal contact") %>% 
+  present_results("Time Measurement")
+```
+
+
+
+#### Extended and imaginary contact
+We found 137 studies of extended or imagined contact over the past decade, from 101 manuscripts. The average meta-analytic effect size of these studies is  d = 0.37, SE = 0.03.
+```{r}
+iv %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  present_results()
+```
+
+
+The majority of these interventions focus on imagined contact with someone of another race or ethnicity (d = 0.39, SE = 0.08, N = 36), ability (d = 0.33, SE = 0.05, N = 33), or immigrants, asylum seekers, or refugees (d = 0.53, SE = 0.08, N = 19).
+```{r}
+iv_x_pt %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  arrange(desc(n_studies)) %>% 
+  slice(1:3) %>% 
+  present_results("Prejudice Type")
+```
+ 
+The vast majority of these studies (91, in 70 manuscripts) report data from a college setting, where the average d = 0.36, SE = 0.03). In younger populations the effect appears to be somewhat higher, ranging from a low of 0.49 (SE = 0.05, N = 10) among elementary students to a high of 0.62 (SE = 0.30, N = 5) for preschool to kindergarten children.
+```{r}
+iv_x_s %>% 
+  filter(intervention_approach == "extended and imaginary contact",
+         setting %in% c("college", "elementary (grades 1-5)", "preschool / daycare / kindergarten")) %>%
+  arrange(desc(n_studies)) %>% 
+  present_results("Setting")
+```
+
+The majority (123 studies in 93 manuscripts) of all studies measure explicit attitudes as an outcome (d = 0.39, SE = 0.04)
+```{r}
+iv_x_o %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  arrange(desc(n_studies)) %>% 
+  slice(1) %>% 
+  present_results("Outcome Type")
+```
+
+and for the most part (123 studies in 91 manuscripts) immediately following the instructions to imagine a positive interaction or an account of an ingroup member who is friends with an outgroup member (d = 0.37, SE = 0.04).
+```{r}
+iv_x_tm %>% 
+  filter(intervention_approach == "extended and imaginary contact",
+         time_measurement == "same day") %>% 
+  present_results("Time Measurement")
+```
+
+
+
+Similarly, when we restrict our sample to the 18 studies other than the Many Labs replication with treatment N's larger than 78, we find an average effect for imaginary and extended contact of d = 0.12, SE = 0.04).
+```{r}
+iv_large %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  present_results()
+```
+ 
+
+
+
+## Trends in Theory and Assessment
+### Outcome measurement: What kinds of outcomes do the interventions change?
+We find that only 17\% of experiments evaluating interventions in the last decade included implicit measures.
+```{r}
+outcome_perc %>% 
+  filter(outcome_type == "implicit attitudes") %>% 
+  q_table()
+```
+
+On average, interventions reported moderate effects on implicit bias(d = 0.35, SE = 0.05).
+```{r}
+outcome %>% 
+  filter(outcome_type == "implicit attitudes") %>% 
+  present_results(title = "Outcome Type")
+```
+
+Like previous reviews ..., ours finds that many of these studies are under-powered (17 with 25 or fewer participants in the treatment group).
+```{r}
+dat %>% 
+  filter(outcome_type1 == "implicit attitudes" | outcome_type2 == "implicit attitudes") %>% 
+  select(unique_study_id, n_treatment, time_measurement, n_treatment_clusters) %>% 
+  filter(n_treatment <= 25,
+         is.na(n_treatment_clusters)) %>% 
+  summarise(less_than_25 = n_distinct(unique_study_id)) %>% 
+  sable()
+```
+
+We also find symptoms of publication bias insofar as studies in the smallest quintile of study sample size report an average d of 0.77 (SE = 0.18, N = 11), as compared to studies with 78 or more participants in the treatment group (of 9 studies, d = 0.26, SE = 0.10). 
+```{r}
+ntc_x_o %>% 
+  filter(outcome_type == "implicit attitudes") %>% 
+  drop_na(n_treatment_category) %>% 
+  slice(1, 5) %>% 
+  present_results(title = "Treatment Category", type = "Outcome")
+```
+
+
+Importantly, we find 34 studies that assess the effects of an intervention on both implicit and explicit attitudes. 
+```{r, message=F, warning=F}
+explicit_x_implicit <- 
+  dat %>% 
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  transmute(unique_study_id, 
+            outcome_type = str_to_title(outcome_type), 
+            d) %>% 
+  filter(outcome_type %in% c("Explicit Attitudes Or Beliefs", "Implicit Attitudes")) %>% 
+  group_by(unique_study_id, outcome_type) %>% 
+  summarise(d = mean(d)) %>% # collpase within study
+  mutate(n_outcomes = n()) %>% 
+  ungroup() %>% 
+  filter(n_outcomes == 2) %>% 
+  pivot_wider(names_from = outcome_type, values_from = d) 
+
+
+
+
+explicit_x_implicit %>% 
+  summarise(explicit_x_implicit_n = nrow(.)) %>% 
+  sable()
+```
+
+Across studies, there appears to be no correlation (r = .02) between finding strong effects on implicit prejudice and finding strong effects on explicit prejudice.
+```{r}
+cor(explicit_x_implicit$`Explicit Attitudes Or Beliefs`, explicit_x_implicit$`Implicit Attitudes`) %>% 
+  tibble(r = .) %>% 
+  sable()
+```
+
+
+### Light touch interventions
+
+### Light Touch
+Of the 418 studies in our meta-analytic database from 2007 to 2019, 76\% were coded as testing one or more light touch interventions.
+```{r lt_perc}
+n_lt <- dat %>% 
+  filter(light_touch == "light touch") %>% 
+  summarize(n = n_distinct(unique_study_id)) %>% 
+  pull(n)
+
+n_lt / n_studies
+```
+
+
+
+Only 8\% of the 319 light touch intervention studies measure outcomes at least one day after treatment...
+```{r}
+n_lt_delayed <- dat %>% 
+  filter(light_touch == "light touch",
+         time_measurement == "day after or more") %>% 
+  summarize(n = n_distinct(unique_study_id)) %>% 
+  pull(n)
+
+
+
+
+tibble(n_light_touch = n_lt, perc_delayed =  n_lt_delayed / n_lt) %>% 
+  sable()
+```
+
+
+...1\% measure outcomes a month later.  
+```{r lt_1month}
+n_lt_1month <- dat %>% 
+  filter(light_touch == "light touch",
+         time_measurement == "day after or more",
+         delay_category == "Greater than one month") %>% 
+  summarize(n = n_distinct(unique_study_id)) %>% 
+  pull(n)
+
+n_lt_1month / n_lt
+```
+
+
+although a meta-analysis that focuses solely on light touch interventions suggests that that they work well (d = 0.35, SE = 0.02)
+```{r}
+lt %>% 
+  filter(light_touch == "light touch") %>% 
+  present_results(title = "Light Touch")
+```
+
+examining light-touch experiments in the top quintile of sample size reveals a much smaller average effect (d = 0.16, SE = 0.02). 
+```{r}
+ntc_x_lt %>% 
+  filter(light_touch == "light touch",
+         n_treatment_category == "≥ 78") %>% 
+  present_results(title = "N Treatment Category", type = "Light Touch")
+```
+
+#### Landmark Studies
+## Conclusion: The state of prejudice reduction
+
+The average effect size of the prejudice reduction literature is d = 0.357, a meaningful but modest shift in prejudice.
+```{r overall_effect}
+```
+
+Specifically, the average effect size drops 48\%,
+```{r}
+(overall$beta - slice(ntc, 5)$beta) /  overall$beta
+```
+
+to d = 0.187.
+```{r largest_quintile_effect}
+```
+
+## Sidebar and Definitions
+### Publication bias in the prejudice reduction literature
+Our collection of studies displays a powerful relationship of this kind, even when we focus solely on lab experiments (N = 301)
+```{r}
+dat %>% 
+  select(unique_study_id, intervention_type1, intervention_type2) %>% 
+  filter(intervention_type1 == "lab" | intervention_type2 == "lab") %>% 
+  summarise(n_lab = n_distinct(unique_study_id))
+```
+
+### Theoretical synergy in creating prejudice reduction interventions
+The average N in our database of synergy studies is just 145, which seems too few to reliably detect synergies.
+```{r}
+dat %>% 
+  transmute(unique_study_id, 
+            n = n_treatment + n_control,
+            synergy = as.logical(synergy)) %>% 
+  filter(synergy) %>% 
+  group_by(unique_study_id) %>%
+  summarise_all(~mean(.)) %>%
+  summarise(n = mean(n))
+```
+
+### Personalization
+Our collection of studies includes 50 that look for heterogeneous treatment effects by subjects' attributes or contextual characteristics.
+```{r, warning=FALSE}
+dat %>% 
+  transmute(unique_study_id, 
+            heterogenous = as.logical(as.numeric(heterogenous))) %>% 
+  filter(heterogenous) %>% 
+  summarise(n_hetero = n_distinct(unique_study_id))
+```
+
+However, only three of the studies we reviewed took this kind of structured approach to the search for heterogeneous effects.
+```{r, warning=FALSE}
+dat %>% 
+  transmute(unique_study_id, 
+            preregister = as.logical(preregister), 
+            heterogenous = as.logical(as.numeric(heterogenous))) %>% 
+  filter(heterogenous, preregister) %>% 
+  summarise(n_hetero = n_distinct(unique_study_id))
+```
+
+## Appendix
+In total we recovered 309 manuscripts from our search.
+```{r n_manuscript}
+```
+
+we settled on a final set of 309 (representing 416 studies).
+```{r n_studies}
+```
+
+We do in fact see a powerful relationship of this kind in our sample: we find a strong positive relationship between standard errors and effect size.
+```{r cor_se_D}
+cor(dat$st_err_d, dat$d)
+```
+
+
+tab:meta
+```{r meta_table}
+## unadjusted
+res <- metafor::rma.uni(yi = d,vi =  var_d, data = dat) ## 1 
+
+## unadjusted clustered
+res_clus <- robust(res, cluster = dat$unique_paper_id) ## 2 
+
+## collapsed
+collapsed_data <- dat %>%
+  select(unique_paper_id, unique_study_id, d, var_d) %>%
+  group_by(unique_paper_id, unique_study_id) %>%
+  summarise(d = mean(d),
+            var_d = mean(var_d))
+
+
+res_collap <- metafor::rma.uni(yi = d, vi =  var_d, data = collapsed_data) ## 3 
+
+## collapsed clustered
+res_collap_clus <- robust(res_collap, cluster = collapsed_data$unique_paper_id) ## 4
+
+meta_levels <- tibble(names = c("unadjusted", "unadjusted clustered", "collapsed", "collapsed clustered"),
+                      df = list(res, res_clus, res_collap, res_collap_clus))
+
+
+meta_levels %>%
+  mutate(`se clustered at paper level` = str_detect(names, "clustered"),
+         `collapsed at study level` = str_detect(names, "collapsed"),
+         data = map(df,.f = extract_meta_data)) %>%
+  unnest(data) %>%
+  select(-z_value) %>%
+  mutate(se = add_parentheses(two_digits(se)),
+         reg_coef = three_digits(reg_coef)) %>%
+  pivot_longer(cols = c(reg_coef, se), names_to = "lame", values_to = "value") %>%
+  select(-df, -lame) %>%
+  mutate_if(is.logical, ~ifelse(. == T, "yes", "no")) %>%
+  mutate(names = as.integer(gl(4, 2))) %>%
+  mutate(`collapsed at study level` = if_else(names %% 2 == 0,
+                                              str_c(`collapsed at study level`, "."),
+                                                    `collapsed at study level`)) %>%
+  sable(booktabs = T, linesep = "") %>%   # format = "latex"
+  collapse_rows(columns = 1:3)
+```
+
+
+Interestingly, the estimates from these different approaches are quite similar, hovering around an average d of .341
+```{r avg_meta_by_estimates}
+meta_levels %>%
+  mutate(`se clustered at paper level` = str_detect(names, "clustered"),
+         `collapsed at study level` = str_detect(names, "collapsed"),
+         data = map(df,.f = extract_meta_data)) %>%
+  unnest(data) %>%
+  summarise(avg_d = round(mean(reg_coef), 3))
+```
+
+Even the smallest z-score is larger than 15.4
+```{r smallest_z}
+min(extract_test_stat(res), 
+    extract_test_stat(res_clus), 
+    extract_test_stat(res_collap), 
+    extract_test_stat(res_collap_clus)
+   )
+```
+
+
+```{r quintile_tables}
+ntcl %>%
+  quintile_results_table("Lab Studies by Quintile Group")
+
+nto %>%
+  quintile_results_table("Online Studies by Quintile Group")
+
+ntc_x_lt %>%
+  filter(light_touch == "light touch") %>%
+  select(-2) %>%
+  quintile_results_table("Light Touch Studies by Quintile Group")
+
+ntc_x_lt %>%
+  filter(light_touch != "light touch") %>%
+  select(-2) %>%
+  quintile_results_table("Non-Light Touch Studies by Quintile Group")
+```
+
+### Extended and imaginary contact effect sizes when including Many Labs
+When we limit to studies of extended and imagined contact only with > 78 participants in the treatment condition, our effect changes from d = 0.12, SE = 0.04 to d = 0.11, SE = 0.03. 
+```{r}
+ml_large %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  present_results()
+```
+
+When we include this effect for estimating the overall effect of extended and imagined contact we find that our estimate doesn't change and remains d = 0.37, SE = 0.03.
+```{r}
+ml %>% 
+  filter(intervention_approach == "extended and imaginary contact") %>% 
+  present_results()
+```
+
+### Robustness Check: Adding Lai et al. (2014) and (2016)
+An additional robustness check we conduct is the inclusion of two large-scale replication papers concerning implicit prejudice (Lai 2014, 2016). These studies were not picked up by our original search criteria, but were suggested by a colleague when the paper was  nearing publication. We find that including the two studies does not materially affect our central estimates: D declines from 0.357 to 0.352, the standard error from 0.0209 to 0.0207.
+```{r lai_studies_overall}
+lai_overall_no_labs
+```
+
+Results remain stable when we include both the Many Labs results and the Lai (2014, 2016) results (d = 0.351, SE = 0.021), as well as when we differentiate results by outcome type. 
+
+```{r lai_additional_analyses}
+lai_overall_with_labs
+
+lai_outcome_no_labs
+lai_outcome_with_labs
+
+```
+Lai et al. (2014, 2016) also provide many additional simultaneous measurements of explicit and implicit prejudice. When these new data points are included, however, the overall correlation between the two categories remains minimal: from r = .02 to r = .041.
+
+
+```{r}
+# .02 estimate
+explicit_x_implicit %>% 
+  summarise(explicit_x_implicit_n = nrow(.)) %>% 
+  sable()
+
+#.041 estimate
+explicit_x_implicit_with_lai <- 
+  dat %>% full_join(y = readRDS('../data/lai_data.rds')) %>%
+  pivot_longer(cols = outcome_type1:outcome_type2, 
+               names_repair = "unique",
+               values_to = "outcome_type", 
+               values_drop_na = T) %>% 
+  transmute(unique_study_id, 
+            outcome_type = str_to_title(outcome_type), 
+            d) %>% 
+  filter(outcome_type %in% c("Explicit Attitudes Or Beliefs", "Implicit Attitudes")) %>% 
+  group_by(unique_study_id, outcome_type) %>% 
+  summarise(d = mean(d)) %>% # collpase within study
+  mutate(n_outcomes = n()) %>% 
+  ungroup() %>% 
+  filter(n_outcomes == 2) %>% 
+  pivot_wider(names_from = outcome_type, values_from = d) 
+
+cor(explicit_x_implicit_with_lai$`Explicit Attitudes Or Beliefs`, 
+    explicit_x_implicit_with_lai$`Implicit Attitudes`) %>% 
+  tibble(r = .) %>% 
+  sable()
+```
+
+### Session Info:
+```{r}
+sessionInfo()
+```
+
+
