@@ -23,7 +23,7 @@ library(scales)
 library(stringr)
 library(tidyr)
 
-dat <- readRDS('../data/prejudice_meta_data.rds')
+dat <- readRDS('data/prejudice_meta_data.rds')
 
 dat <- dat %>% 
   mutate(n_treatment_high_low = case_when(n_treatment <= 25 ~ "=< 25", # low quintile

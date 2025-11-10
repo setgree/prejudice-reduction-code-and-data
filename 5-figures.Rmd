@@ -38,7 +38,7 @@ source("./functions/factor-levels.R")
 source('./functions/forest_functions.R')
 
 # data 
-dat <- readRDS('../data/prejudice_meta_data.rds')
+dat <- readRDS('data/prejudice_meta_data.rds')
 
 ```
 
@@ -74,7 +74,7 @@ In these figures, if a single study tests more than one intervention approach or
          x = "", 
          y = ""))
 
-# ggsave(filename = "../output/figs/intervention_type.png")
+# ggsave(filename = "output/figs/intervention_type.png")
 ```
 
 ### Prejudice type 
@@ -105,7 +105,7 @@ In these figures, if a single study tests more than one intervention approach or
         x = "",
         y = ""))
 
-# ggsave(filename = "../output/figs/prejudice_type.png")
+# ggsave(filename = "output/figs/prejudice_type.png")
 ```
 
 ### Outcome type  
@@ -141,7 +141,7 @@ Note: multi coded are double counted
         x = "",
         y = ""))
 
-# ggsave(filename = "../output/figs/outcome_type.png")
+# ggsave(filename = "output/figs/outcome_type.png")
 ```
 
 ### settings 
@@ -172,7 +172,7 @@ Note: multi coded are double counted
         x = "",
         y = ""))
 
-# ggsave(filename = "../output/figs/setting.png")
+# ggsave(filename = "output/figs/setting.png")
 ```
 
 ### Arrange four subplots into one plot:
@@ -184,7 +184,7 @@ ggpubr::ggarrange(intervention_approach_plot,
           setting_plot,
           align = "hv")
 
-ggsave(filename = "../output/figs/main_bar_charts.png", width = 14, height = 7) # , width = 14, height = 7
+ggsave(filename = "output/figs/main_bar_charts.png", width = 14, height = 7) # , width = 14, height = 7
 ```
 
 # Figure 2
@@ -236,7 +236,7 @@ dat %>%
                               override.aes = list(size = 2))) # legend size
 
 
-ggsave(filename = "../output/figs/time_trend_study_type.png", width = 9, height = 7)
+ggsave(filename = "output/figs/time_trend_study_type.png", width = 9, height = 7)
 ```
 
 # Appendix Figure 1
@@ -276,7 +276,7 @@ d_by_se_plot +
            y = 4.15,
            label = str_c("n = ", nrow(df_funnel)))
 
-ggsave("../output/figs/se_d_all.png", width = 10, height = 7)
+ggsave("output/figs/se_d_all.png", width = 10, height = 7)
 ```
 
 # Appendix Figure 2
@@ -309,7 +309,7 @@ d_by_se_plot %+%
            label = str_c("n = ", nrow(df_funnel_lab)))
   #geom_smooth(col = "red", fullrange = T)
 
-ggsave("../output/figs/se_d_lab.png", width = 10, height = 7)
+ggsave("output/figs/se_d_lab.png", width = 10, height = 7)
 ```
 
 # Appendix Figure 3
@@ -340,7 +340,7 @@ d_by_se_plot %+%
            y = .928,
            label = str_c("n = ", nrow(df_funnel_online)))
 
-  ggsave("../output/figs/se_d_online.png", width = 10, height = 7)
+  ggsave("output/figs/se_d_online.png", width = 10, height = 7)
 ```
 
 # Appendix Figure 4
@@ -370,7 +370,7 @@ d_by_se_plot %+%
              y = 4.2,
            label = str_c("n = ", nrow(df_funnel_field)))
 
-ggsave("../output/figs/se_d_field.png", width = 10, height = 7)
+ggsave("output/figs/se_d_field.png", width = 10, height = 7)
 ```
 ## Appendix Figure 5
 D by SE plot for field experiments, but LOESS regression line:
@@ -389,7 +389,7 @@ d_by_se_loess_plot <-
   labs(title = "Field Studies (with LOESS Regression)")
 
 d_by_se_loess_plot
-ggsave(filename = '../output/figs/d_by_se_loess_plot.png', plot = d_by_se_loess_plot,
+ggsave(filename = 'output/figs/d_by_se_loess_plot.png', plot = d_by_se_loess_plot,
       width = 10, height = 7)
 
 
@@ -433,7 +433,7 @@ dat %>%
         panel.grid.minor.x = element_blank(),
         legend.position="bottom")
 
-ggsave(filename = "../output/figs/time_trend_outcome_type_explicit_implicit.png", width = 9, height = 7)
+ggsave(filename = "output/figs/time_trend_outcome_type_explicit_implicit.png", width = 9, height = 7)
 
 
 
@@ -464,7 +464,7 @@ iv_big <- prep_meta_data(iv_approach_big, overall_big,
          col = factor(col, nmax = 4))
 
 all_forest_template(iv)
-save_forest("../output/figs/iv_approach.png")
+save_forest("output/figs/iv_approach.png")
 
 # big_forest_template(iv_big, label_pos = .9)
 ```
@@ -483,7 +483,7 @@ ot_df_big <- prep_meta_data(ot_meta_big, overall_big,
                             subfield_var = outcome_type)
 
 all_forest_template(ot_df, label_pos = 1.5)
-save_forest("../output/figs/outcome_type.png")
+save_forest("output/figs/outcome_type.png")
 
 #big_forest_template(ot_df_big, label_pos = .9)
 ```
@@ -493,7 +493,7 @@ Intervention approach meta-analytic estimates, for ≥ 78 participants in the tr
 
 ```{r appendix_figure_nine}
 big_forest_template(iv_big)
-save_forest("../output/figs/iv_approach_big.png")
+save_forest("output/figs/iv_approach_big.png")
 ```
 
 # Appendix Figure 10
@@ -501,7 +501,7 @@ Outcome types meta-analytic estimates, for ≥ 78 participants
 in the treatment condition, no clusters
 ```{r appendix_figure_ten}
 big_forest_template(ot_df_big, label_pos = .9)
-save_forest("../output/figs/outcome_type_big.png", width = 5)
+save_forest("output/figs/outcome_type_big.png", width = 5)
 ```
 
 # Appendix Figure 11
@@ -543,7 +543,7 @@ implicit_explicit_data %>%
        #subtitle = "Studies that include both 'Explicit Attitude' and 'Implicit Attitude' outcomes"
        )
 
-ggsave("../output/figs/explicit_x_implicit.png", width = 10, height = 7)
+ggsave("output/figs/explicit_x_implicit.png", width = 10, height = 7)
 ```
 
 ## Appendix Figure 12
@@ -611,7 +611,7 @@ treatment_cat %>%
   guides(col = guide_legend(order = 1),
          size = guide_legend(order = 2))
 
-ggsave("../output/figs/quintile-points.png", 
+ggsave("output/figs/quintile-points.png", 
        width = 7.5)
 
 
@@ -643,7 +643,7 @@ all_plot <- ggplot(data = df_flat,
   theme_bw()
 all_plot 
 
-ggsave(filename = '../output/figs/all_plot.png', plot = all_plot, 
+ggsave(filename = 'output/figs/all_plot.png', plot = all_plot, 
        width = 16, height = 9)
 
 ```
@@ -665,10 +665,10 @@ setting_df_big <- prep_meta_data(setting_meta_big, overall_big,
                                  subfield_var = setting)
 
 all_forest_template(setting_df, label_pos = 1.5)
-save_forest("../output/figs/setting.png")
+save_forest("output/figs/setting.png")
 
 big_forest_template(setting_df_big, label_pos = .95)
-save_forest("../output/figs/setting_big.png", width = 7)
+save_forest("output/figs/setting_big.png", width = 7)
 ```
 
 
@@ -684,10 +684,10 @@ pt_df_big <- prep_meta_data(pt_meta_big, overall_big,
                             subfield_var = prejudice_type)
 
 all_forest_template(pt_df, label_pos = 1.5)
-save_forest("../output/figs/prejudice_type.png", height = 9)
+save_forest("output/figs/prejudice_type.png", height = 9)
 
 big_forest_template(pt_df_big, label_pos = 1.7)
-save_forest("../output/figs/prejudice_type_big.png", width = 7)
+save_forest("output/figs/prejudice_type_big.png", width = 7)
 ```
 
 
@@ -721,7 +721,7 @@ dat %>%
         legend.text = element_text(size = 12),
         panel.grid.minor.x = element_blank())
 
-ggsave(filename = "../output/figs/time_trend_outcome_type.png", width = 9, height = 7)
+ggsave(filename = "output/figs/time_trend_outcome_type.png", width = 9, height = 7)
 
 ```
 
@@ -834,7 +834,7 @@ palettes <- ggthemes_data[["tableau"]][["color-palettes"]][["regular"]]$`Tableau
           panel.grid.minor.x = element_blank())
 )
 
-ggsave("../output/figs/quintile.png", height = 4.5, width = 7)
+ggsave("output/figs/quintile.png", height = 4.5, width = 7)
 ```
 
 
@@ -925,7 +925,7 @@ delay_plot <- ggplot(data = light_delay,
   theme(plot.title = element_text(hjust = 0.5)) + 
   guides(size = FALSE)
 delay_plot
-ggsave(filename = '../output/figs/delay_plot.png', plot = delay_plot,
+ggsave(filename = 'output/figs/delay_plot.png', plot = delay_plot,
        width = 16, height = 9)
 
 ```
@@ -934,7 +934,7 @@ ggsave(filename = '../output/figs/delay_plot.png', plot = delay_plot,
 Lai et al.(2016) find that all interventions decline in effect across time. Plotting this requires slightly different parameters than the above light delay plot, because each individual study in the Lai paper tests multiple interventions, which makes collapsing at the level of the study uninformative. 
 
 ```{r lai_light_delay_plot}
-lai <- readRDS('../data/lai_data.rds')
+lai <- readRDS('data/lai_data.rds')
 # subset the relevant studies 
 light_delay_lai <- 
   lai %>%
@@ -989,7 +989,7 @@ delay_plot_lai <- ggplot(data = light_delay_lai,
   labs(colour = "Intervention Approach") + 
   guides(size = FALSE)
 delay_plot_lai
-ggsave(filename = '../output/figs/delay_plot_lai.png', plot = delay_plot_lai,
+ggsave(filename = 'output/figs/delay_plot_lai.png', plot = delay_plot_lai,
        width = 16, height = 9)
 
 
@@ -1039,7 +1039,7 @@ dplot(setting = 'all', prej_data = dat %>%
 ### D by SE plot just the Lai et al. (2014, 2016) studies
 
 ```{r d_by_se_lai_studies}
-lai <- readRDS('../data/lai_data.rds') 
+lai <- readRDS('data/lai_data.rds') 
 
 lai_plot <- ggplot(data = lai,
                    mapping = aes(x = st_err_d, y = d)) +
@@ -1071,7 +1071,7 @@ lai_plot <- ggplot(data = lai,
                     mapping = aes(x = x, y = y, label = labels), 
                     hjust = 'inward', vjust = 'inward'))
   
-  ggsave(filename = '../output/figs/lai_se_d_plot.png', plot = lai_plot, 
+  ggsave(filename = 'output/figs/lai_se_d_plot.png', plot = lai_plot, 
        width = 16, height = 9)
 
 

@@ -2,7 +2,7 @@ library(dplyr)
 library(RefManageR)
 
 # subset studies that have DOIs
-dat_with_dois  <- readRDS('../data/prejudice_meta_data.rds') %>% 
+dat_with_dois  <- readRDS('data/prejudice_meta_data.rds') %>% 
   filter(!is.na(doi)) %>%
   select(title, author, year, doi, url) %>%
   distinct(title, .keep_all = T)

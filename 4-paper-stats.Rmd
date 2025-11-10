@@ -48,31 +48,31 @@ library(tidyr)
 Load Data
 ```{r load_data, warning=FALSE, message=FALSE}
 ## main dataset -----------------------------------
-dat <- read_rds('../data/prejudice_meta_data.rds')
+dat <- read_rds('data/prejudice_meta_data.rds')
 
 ## meta analytic results; created in 3-sub-group.R -----------------------------------
-overall <- read_csv("../data/meta-analytic/overall/overall_meta.csv") # e.g., loads overall meta-analytic results
-iv <- read_csv("../data/meta-analytic/overall/intervention_approach.csv")
-iv_x_pt <- read_csv("../data/meta-analytic/overall/intervention_approach_x_prejudice_type.csv")
-iv_x_o <- read_csv("../data/meta-analytic/overall/intervention_approach_x_outcome_type.csv") 
-iv_x_tm <- read_csv("../data/meta-analytic/overall/intervention_approach_x_time_measurement.csv")
-iv_x_s <- read_csv("../data/meta-analytic/overall/intervention_approach_x_setting.csv")
-iv_x_it <- read_csv("../data/meta-analytic/overall/intervention_approach_x_intervention_type.csv")
-iv_large <- read_csv("../data/meta-analytic/overall/intervention_approach_t>e78_drop_cluster.csv")
-outcome <- read_csv("../data/meta-analytic/overall/outcome_type.csv")
-lt <- read_csv("../data/meta-analytic/overall/light_touch.csv")
-lt_x_tm <- read_csv("../data/meta-analytic/overall/light_touch_x_time_measurement.csv")
-ntc <- read_csv("../data/meta-analytic/overall/n_treatment_category_drop_cluster.csv")
-ntc_x_lt <- read_csv("../data/meta-analytic/overall/n_treatment_category_x_light_touch_drop_cluster.csv")
-ntcl <- read_csv("../data/meta-analytic/lab/n_treatment_category_drop_cluster_lab_studies.csv")
-nto <- read_csv("../data/meta-analytic/online/n_treatment_category_drop_cluster_online_studies.csv")
-ntc_x_o <- read_csv("../data/meta-analytic/overall/n_treatment_category_x_outcome_type_drop_cluster.csv")
-ml_large <- read_csv("../data/meta-analytic/overall/intervention_approach_many_lab_t>e78_drop_cluster.csv")
-ml <- read_csv("../data/meta-analytic/overall/intervention_approach_many_lab.csv")
-lai_outcome_no_labs <- read_csv('../data/meta-analytic/overall/outcome_type_lai_studies.csv')
-lai_outcome_with_labs <- read_csv('../data/meta-analytic/overall/outcome_type_many_lab_lai_studies.csv')
-lai_overall_no_labs <- read_csv('../data/meta-analytic/overall/overall_meta_lai_studies.csv')
-lai_overall_with_labs <- read_csv('../data/meta-analytic/overall/overall_meta_many_lab_lai_studies.csv')
+overall <- read_csv("data/meta-analytic/overall/overall_meta.csv") # e.g., loads overall meta-analytic results
+iv <- read_csv("data/meta-analytic/overall/intervention_approach.csv")
+iv_x_pt <- read_csv("data/meta-analytic/overall/intervention_approach_x_prejudice_type.csv")
+iv_x_o <- read_csv("data/meta-analytic/overall/intervention_approach_x_outcome_type.csv") 
+iv_x_tm <- read_csv("data/meta-analytic/overall/intervention_approach_x_time_measurement.csv")
+iv_x_s <- read_csv("data/meta-analytic/overall/intervention_approach_x_setting.csv")
+iv_x_it <- read_csv("data/meta-analytic/overall/intervention_approach_x_intervention_type.csv")
+iv_large <- read_csv("data/meta-analytic/overall/intervention_approach_t>e78_drop_cluster.csv")
+outcome <- read_csv("data/meta-analytic/overall/outcome_type.csv")
+lt <- read_csv("data/meta-analytic/overall/light_touch.csv")
+lt_x_tm <- read_csv("data/meta-analytic/overall/light_touch_x_time_measurement.csv")
+ntc <- read_csv("data/meta-analytic/overall/n_treatment_category_drop_cluster.csv")
+ntc_x_lt <- read_csv("data/meta-analytic/overall/n_treatment_category_x_light_touch_drop_cluster.csv")
+ntcl <- read_csv("data/meta-analytic/lab/n_treatment_category_drop_cluster_lab_studies.csv")
+nto <- read_csv("data/meta-analytic/online/n_treatment_category_drop_cluster_online_studies.csv")
+ntc_x_o <- read_csv("data/meta-analytic/overall/n_treatment_category_x_outcome_type_drop_cluster.csv")
+ml_large <- read_csv("data/meta-analytic/overall/intervention_approach_many_lab_t>e78_drop_cluster.csv")
+ml <- read_csv("data/meta-analytic/overall/intervention_approach_many_lab.csv")
+lai_outcome_no_labs <- read_csv('data/meta-analytic/overall/outcome_type_lai_studies.csv')
+lai_outcome_with_labs <- read_csv('data/meta-analytic/overall/outcome_type_many_lab_lai_studies.csv')
+lai_overall_no_labs <- read_csv('data/meta-analytic/overall/overall_meta_lai_studies.csv')
+lai_overall_with_labs <- read_csv('data/meta-analytic/overall/overall_meta_many_lab_lai_studies.csv')
 ## create percentage data frames for examining groups of studies -----------------------------------
 n_studies <- n_distinct(dat$unique_study_id) # n unique studies
 
@@ -1271,7 +1271,7 @@ explicit_x_implicit %>%
 
 #.041 estimate
 explicit_x_implicit_with_lai <- 
-  dat %>% full_join(y = readRDS('../data/lai_data.rds')) %>%
+  dat %>% full_join(y = readRDS('data/lai_data.rds')) %>%
   pivot_longer(cols = outcome_type1:outcome_type2, 
                names_repair = "unique",
                values_to = "outcome_type", 

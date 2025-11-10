@@ -65,7 +65,7 @@ meta_analyze <- function(..., treatment_size_eqlgrtr_than = 0,
   vars <- map_chr(group_vars, quo_name)
   
   if(add_lai_data){
-    dat <- full_join(dat, readRDS(file = '../data/lai_data.rds')) %>%
+    dat <- full_join(dat, readRDS(file = 'data/lai_data.rds')) %>%
       select(-n_treatment_high_low) %>% #redo this calculation just in case
       mutate(n_treatment_high_low = case_when(n_treatment <= 25 ~ "=< 25", # low quintile
                                               n_treatment >= 78 ~ ">= 78", # high quintile
@@ -151,7 +151,7 @@ meta_analyze <- function(..., treatment_size_eqlgrtr_than = 0,
   if(lab_only | online_only | field_only) output <- mutate(output, intervention_setting = str_sub(str_c(it_label, "_only"), 2))
   filename <- vars %>% paste(collapse = "_x_")
   if(length(group_vars) == 0) filename = "overall_meta"
-  out_filename <- "../data/meta-analytic/{folder}/{filename}{many_lab_label}{lai_label}{t_great}{t_less}{cluster}{it_label}.csv"
+  out_filename <- "data/meta-analytic/{folder}/{filename}{many_lab_label}{lai_label}{t_great}{t_less}{cluster}{it_label}.csv"
   
   print(glue(out_filename))
   if(output_file) write_csv(output, path = glue(out_filename))

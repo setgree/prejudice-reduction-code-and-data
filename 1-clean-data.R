@@ -21,7 +21,7 @@ library(vtable)
 
 
 ## load raw data
-dat <- read_csv(file = '../data/raw-data.csv')
+dat <- read_csv(file = 'data/raw-data.csv')
 
 ## drop the unnamed first column (row numbers from original export)
 dat <- dat %>% select(-`...1`)
@@ -405,10 +405,10 @@ dat$test_statistic <- gsub('^-$', 0.001, dat$test_statistic)
 
 #' # Preparing to save ----------------------------------------------
 #' ## remove non-ascii
-vtable(dat, file = '../output/vtable.html', out = 'kable') 
+vtable(dat, file = 'output/vtable.html', out = 'kable') 
 
 # save as rds file
-write_rds(dat, '../data/prejudice_meta_data.rds')
+write_rds(dat, 'data/prejudice_meta_data.rds')
 
 sessionInfo()
 

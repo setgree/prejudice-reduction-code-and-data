@@ -24,11 +24,11 @@ knitr::opts_knit$set(root.dir = wd)
 setwd(wd)
 
 # check if paths exist and make them if are not found
-system('mkdir -p ../output/figs')
-system('mkdir -p ../data/meta-analytic/field')
-system('mkdir -p ../data/meta-analytic/lab')
-system('mkdir -p ../data/meta-analytic/online')
-system('mkdir -p ../data/meta-analytic/overall')
+system('mkdir -p output/figs')
+system('mkdir -p data/meta-analytic/field')
+system('mkdir -p data/meta-analytic/lab')
+system('mkdir -p data/meta-analytic/online')
+system('mkdir -p data/meta-analytic/overall')
 
 # Step 1: clean
 source('./1-clean-data.R')
@@ -41,17 +41,17 @@ source('./3-sub-group.R')
 
 # Step 4: paper stats
 rmarkdown::render(input = './4-paper-stats.Rmd',
-                  output_dir = '../output', clean = T)
+                  output_dir = 'output', clean = T)
 
 # Step 5: all plots
 rmarkdown::render(input = './5-figures.Rmd',
-                  output_dir = '../output', clean = T)
+                  output_dir = 'output', clean = T)
 
 # Step 6: methods check
 rmarkdown::render(input = './6-methods-check.Rmd',
-                  output_dir =  '../output', clean = T)
+                  output_dir =  'output', clean = T)
 
 # Wrapping up: for long term reproducibility, convert package info -> Dockerfile
 source('./functions/write_dockerfile.R')
-write_dockerfile(dir = '../documentation/')
+write_dockerfile(dir = 'documentation/')
 

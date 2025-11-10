@@ -13,7 +13,7 @@ library(haven)
 library(textclean)
 library(stringr)
 
-dat <- readRDS(file = '../data/prejudice_meta_data.rds')
+dat <- readRDS(file = 'data/prejudice_meta_data.rds')
 
 #' meta-analytic function:
 #' adapted from 'The Contact Hypothesis Re-evaluated', Paluck et al. 2018
@@ -57,12 +57,12 @@ dat_clean <- dat %>%
 nrow(dat_clean %>% filter(is.na(var_d)))
 
 #" Save files
-saveRDS(object = dat_clean, file = '../data/prejudice_meta_data.rds')
+saveRDS(object = dat_clean, file = 'data/prejudice_meta_data.rds')
 
 # save for Stata users:
 dat_clean %>%
   mutate_if(.predicate = is.character, .funs = replace_non_ascii) %>%
   mutate_if(.predicate = is.character, ~str_trunc(string = ., width =  30)) %>%
-  write_dta('../data/prejudice_meta_data.dta', version = 15)
+  write_dta('data/prejudice_meta_data.dta', version = 15)
 
  sessionInfo()
