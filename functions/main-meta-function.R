@@ -154,7 +154,7 @@ meta_analyze <- function(..., treatment_size_eqlgrtr_than = 0,
   out_filename <- "data/meta-analytic/{folder}/{filename}{many_lab_label}{lai_label}{t_great}{t_less}{cluster}{it_label}.csv"
   
   print(glue(out_filename))
-  if(output_file) write_csv(output, path = glue(out_filename))
+  if(output_file) write_csv(output, file = glue(out_filename))
 
   # Play sound notification if beepr is installed
   if (requireNamespace("beepr", quietly = TRUE)) {
