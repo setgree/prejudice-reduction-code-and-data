@@ -93,7 +93,7 @@ These conversions were calculated in the original dataset.
 We now check that Glass's Delta can be recovered from standard error of the intercept of a regression.
 ```{r, eval=TRUE}
 rm(list = ls()) # clear variables
-dat <- readRDS(file = '../data/sim_data.rds') # load data
+dat <- readRDS(file = 'data/sim_data.rds') # load data
 suppressMessages(attach(dat))
 
 # simple regression of outcome one on treatment assignment

@@ -9,7 +9,6 @@ rm(list = ls())
 library(dplyr)
 library(forcats)
 library(glue)
-library(here)
 library(lubridate)
 library(janitor)
 library(openxlsx)
@@ -22,13 +21,13 @@ library(vtable)
 
 
 ## load raw data
-dat <- read_csv(file = here("data", "raw-data.csv"))
+dat <- read_csv(file = 'data/raw-data.csv')
 
 ## drop the unnamed first column (row numbers from original export)
-dat <- dat |> select(-`...1`)
+dat <- dat %>% select(-`...1`)
 
 ## put general information columns towards the end
-dat <- dat |> select(-publication_type, -publication_title,
+dat <- dat %>% select(-publication_type, -publication_title,
                       -abstract, -doi, -url,
                       everything())
 
@@ -36,7 +35,7 @@ dat <- dat |> select(-publication_type, -publication_title,
 # NOTE: the terms paper, article, and manuscript are used interchangeably 
 # in these files and in Paluck et al. 2020
 
-dat |> 
+dat %>% 
   summarise(n_papers = n_distinct(unique_paper_id))
 
 #' # Cleaning ------------------------------------------------------------------
@@ -108,14 +107,14 @@ dat$author <- gsub(pattern = 'J. Gu, A. Mueller, I. Nielsen, J. Shachat and R. S
 
 
 #' create second_country and third_country variables for multi-country studies
-dat <- dat |>
+dat <- dat %>%
   separate(col = 'country', into = c('country1', 'country2', 'country3'), 
            sep = ' & ', remove = TRUE)
 # note -doing sep = ' & ' with spaces because each string has spaces
 
 #' # type of prejudice ----------------------------------------------------
 #'  space things out by prejudice type, first, second, third, etc.
-dat <- dat |>
+dat <- dat %>%
   separate(col = prejudice_type,
            into = c('prejudice_type1', 'prejudice_type2', 
                     'prejudice_type3', 'prejudice_type4', 
@@ -127,11 +126,11 @@ dat$outcome_type <- gsub(pattern = ', ', ',', dat$outcome_type)
 dat$outcome_type <- gsub(pattern = '\n', '', dat$outcome_type)
 
 #' # separate out outcome type into type 1 and type 2 ----------------
-dat <- dat |>
+dat <- dat %>%
   mutate(mediator = str_detect(outcome_type, "9"),
-         outcome_type = str_remove_all(outcome_type, "9")) |>
+         outcome_type = str_remove_all(outcome_type, "9")) %>%
   separate(col = outcome_type, into = c('outcome_type1', 'outcome_type2'),
-           sep = ',', remove = TRUE) |>
+           sep = ',', remove = TRUE) %>%
   mutate(outcome_type1 = parse_number(outcome_type1),
          outcome_type2 = parse_number(outcome_type2))
 
@@ -163,7 +162,7 @@ dat$intervention_approach <- gsub(' and ', ',',
                                   dat$intervention_approach)
 
 #' separate intro approach 1/2 for multi-approach studies:
-dat <- dat |>
+dat <- dat %>%
   separate(col = intervention_approach, 
            into = c('intervention_approach1', 
                     'intervention_approach2'),
@@ -204,18 +203,20 @@ dat$intervention_span <- sub(pattern = '^1$', '1 day'
 table(dat$intervention_span) # looks good
 
 #' ### convert everything to days (rounding up to nearest day)
-dat <- dat |>
+dat <- dat %>%
   mutate(intervention_span_days = 
            round(as.integer(lubridate::as.duration(intervention_span))/ 86400))
 table(dat$intervention_span_days)
 
 #' ### add unique_study_id variable -------------------------------------------
 dat <- dat |>
-  mutate(unique_study_id = group_indices(., unique_paper_id, study_num))
+  group_by(unique_paper_id, study_num) |>
+  mutate(unique_study_id = cur_group_id()) |>
+  ungroup()
 
 #' Add delay category variable
 class(dat$delay)
-dat <- dat |>
+dat <- dat %>%
   mutate(delay = str_replace_all(delay, "0|0.0|-", "1 second"),
          delay = lubridate::as.duration(delay),
          delay = round(as.numeric(delay, "days"), 0),
@@ -228,9 +229,9 @@ dat <- dat |>
 source("./functions/factor-levels.R") 
 
 #' Apply factor levls to dataset
-dat <- dat |> 
-  separate(setting, into = c("setting1", "setting2", "setting3", "setting4")) |> 
-  separate(intervention_type, into = c("intervention_type1", "intervention_type2")) |> 
+dat <- dat %>% 
+  separate(setting, into = c("setting1", "setting2", "setting3", "setting4")) %>% 
+  separate(intervention_type, into = c("intervention_type1", "intervention_type2")) %>% 
   mutate(intervention_approach1 = as.character(parse_number(intervention_approach1)), # intervention approach
          intervention_approach1 = factor(intervention_approach1, 
                                          levels = names(intervention_approach_levels),
@@ -246,7 +247,7 @@ dat <- dat |>
          intervention_approach2 = fct_collapse(intervention_approach2, # for combining categories
                                                `Diversity Trainings` =
                                                  c("sensitivity, cultural competence for health and law",
-                                                   "diversity training"))) |> 
+                                                   "diversity training"))) %>% 
   mutate(time_measurement = factor(time_measurement,  # time measurement
                                    levels = names(time_measurement_levels),
                                    labels = time_measurement_levels),
@@ -278,7 +279,7 @@ dat <- dat |>
          prejudice_type5 = as.character(parse_number(prejudice_type5)), # prejudice type
          prejudice_type5 = factor(prejudice_type5, 
                                   levels = names(prejudice_type_levels), 
-                                  labels = prejudice_type_levels)) |> 
+                                  labels = prejudice_type_levels)) %>% 
   mutate(setting1 = as.character(parse_number(setting1)), # setting
          setting1 = factor(setting1, 
                            levels = names(setting_levels),
@@ -306,17 +307,17 @@ dat <- dat |>
 
 # add quintiles -----------------------------------
 quintile_n <- 
-  dat |> 
+  dat %>% 
   transmute(author,
             unique_study_id, 
             time_measurement,
             n_treatment_clusters, # n_treatment clusters needs to remain character to join again
-            n_treatment = round(n_treatment)) |> 
+            n_treatment = round(n_treatment)) %>% 
   filter(author != "Butler D.M., Crabtree C.", # drop outlier size study
          is.na(as.numeric(n_treatment_clusters)),  # drop effects with clusters; should cause warning we are searching NA's intentionally
-         time_measurement == "same day") |> # drop effects with delayed outcome
-  group_by(unique_study_id, time_measurement, n_treatment_clusters) |> 
-  summarise(n_treatment = mean(n_treatment), .groups = "keep") |> # collapse sample sizes by study
+         time_measurement == "same day") %>% # drop effects with delayed outcome
+  group_by(unique_study_id, time_measurement, n_treatment_clusters) %>% 
+  summarise(n_treatment = mean(n_treatment), .groups = "keep") %>% # collapse sample sizes by study
   ungroup()
 
 
@@ -351,15 +352,15 @@ reformat_labels <- function(str){
 reformat_labels(quintile_groups) # we get nice boundaries
 
 quintile_categories <- 
-quintile_n |> 
+quintile_n %>% 
   mutate(n_treatment_category = 
            cut(n_treatment, 
                include.lowest = T,
                breaks = cutoff_points
            )
-  ) |>
-  mutate(n_treatment_category = reformat_labels(n_treatment_category)) |> 
-  mutate(n_treatment_category = factor(n_treatment_category)) |> 
+  ) %>%
+  mutate(n_treatment_category = reformat_labels(n_treatment_category)) %>% 
+  mutate(n_treatment_category = factor(n_treatment_category)) %>% 
   mutate(n_treatment_category = case_when(as.numeric(n_treatment_category) == 1 ~ str_c("≤", str_extract(n_treatment_category, " \\d+")), # less than
                                           as.numeric(n_treatment_category) == max(as.numeric(n_treatment_category)) ~ str_c("≥ ", str_extract(n_treatment_category, "\\d+ ")), # greater than
                                           TRUE ~ as.character(n_treatment_category))) # don't modify rest
@@ -367,22 +368,22 @@ quintile_n |>
 
 
 q_labels <- # create vector of labels
-  quintile_categories |>
-  distinct(n_treatment_category) |> 
-  arrange(n_treatment_category) |> 
+  quintile_categories %>%
+  distinct(n_treatment_category) %>% 
+  arrange(n_treatment_category) %>% 
   mutate(n_treatment_category = factor(n_treatment_category),
          n_treatment_category = relevel(n_treatment_category, 2),
-         n_treatment_category = fct_shift(n_treatment_category)) |> 
-  arrange(desc(n_treatment_category)) |> 
+         n_treatment_category = fct_shift(n_treatment_category)) %>% 
+  arrange(desc(n_treatment_category)) %>% 
   pull()
 
 dat <- # add to dataset based on study_id, time_measurement, and cluster
-  left_join(dat, select(quintile_categories, -n_treatment)) |> 
+  left_join(dat, select(quintile_categories, -n_treatment)) %>% 
   mutate(n_treatment_category = factor(n_treatment_category, 
                                        levels = levels(q_labels)))
 
-dat |> # correctly categorized -- everything in n_treatment should fall within categories in n_treatment_category
-  select(n_treatment, n_treatment_clusters, n_treatment_category) |> 
+dat %>% # correctly categorized -- everything in n_treatment should fall within categories in n_treatment_category
+  select(n_treatment, n_treatment_clusters, n_treatment_category) %>% 
   head(10)
 
 # correctly specify nulls as 'unspecified nulls'
@@ -396,7 +397,7 @@ dat$sd_control <- as.numeric(as.character(dat$sd_control))
 #' test statistics for which the SD is superfluous in the Cohen's D calculator
 
 #' convert clusters to numeric
-dat <- dat |> 
+dat <- dat %>% 
   mutate(n_control_clusters = as.numeric(n_control_clusters), 
          n_treatment_clusters = as.numeric(n_treatment_clusters))
 
@@ -406,10 +407,10 @@ dat$test_statistic <- gsub('^-$', 0.001, dat$test_statistic)
 
 #' # Preparing to save ----------------------------------------------
 #' ## remove non-ascii
-vtable(dat, file = here("output", "vtable.html"), out = 'kable')
+vtable(dat, file = 'output/vtable.html', out = 'kable') 
 
 # save as rds file
-write_rds(dat, here("data", "prejudice_meta_data.rds"))
+write_rds(dat, 'data/prejudice_meta_data.rds')
 
 sessionInfo()
 
