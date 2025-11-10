@@ -179,9 +179,9 @@ Note: multi coded are double counted
 
 ```{r arrange_figure_one}
 ggpubr::ggarrange(intervention_approach_plot,
-          outcome_type_plot, 
-          prejudice_type_plot, 
-          setting_plot, 
+          outcome_type_plot,
+          prejudice_type_plot,
+          setting_plot,
           align = "hv")
 
 ggsave(filename = "../output/figs/main_bar_charts.png", width = 14, height = 7) # , width = 14, height = 7
@@ -303,12 +303,13 @@ d_by_se_plot %+%
   #stat_regline_equation(label.y = 2.4) +
   annotate(x = .045, y = 2.4, label = y_label, geom = "text") +
   annotate(x = .052, y = 2.25, label = x_label, geom = "text") +
-    annotate(geom = "text", 
-           x = .02, 
+    annotate(geom = "text",
+           x = .02,
            y = 2.1,
-           label = str_c("n = ", nrow(df_funnel_lab))) +
-  #geom_smooth(col = "red", fullrange = T) +
-  ggsave("../output/figs/se_d_lab.png", width = 10, height = 7)
+           label = str_c("n = ", nrow(df_funnel_lab)))
+  #geom_smooth(col = "red", fullrange = T)
+
+ggsave("../output/figs/se_d_lab.png", width = 10, height = 7)
 ```
 
 # Appendix Figure 3

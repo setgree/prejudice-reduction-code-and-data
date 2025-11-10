@@ -3,7 +3,11 @@ library(purrr)
 library(metafor)
 library(tidyr)
 library(glue)
-library(beepr)
+
+# Load beepr only if installed (used for audio notifications)
+if (requireNamespace("beepr", quietly = TRUE)) {
+  library(beepr)
+}
 
 # main meta function -----------------------------------
 
@@ -21,10 +25,10 @@ meta_engine <- function(df, group_vars){
            n_articles = map_int(data, ~dplyr::n_distinct(.x$unique_paper_id))) %>% 
     filter(n_studies >= 2, # drop if fewer than 2 studies
            n_articles > 1) %>% # drop if only one article
-    mutate(meta_main = map(data, ~rma.uni(yi = .x$d, vi = .x$var_d))) %>% 
-    mutate(robust_meta = map2(.x = meta_main, 
-                              .y = data, 
-                              .f = ~robust(x = .x, cluster = .y$unique_paper_id)), # cluster on paper level
+    mutate(meta_main = map(data, ~rma.uni(yi = .x$d, vi = .x$var_d))) %>%
+    mutate(robust_meta = map2(.x = meta_main,
+                              .y = data,
+                              .f = ~robust(x = .x, cluster = .y[["unique_paper_id"]])), # cluster on paper level
            beta = map_dbl(robust_meta, ~unclass(.x)$beta),
            se = map_dbl(robust_meta, ~unclass(.x)$se),
            t = map_dbl(robust_meta, ~unclass(.x)$zval),
@@ -151,7 +155,11 @@ meta_analyze <- function(..., treatment_size_eqlgrtr_than = 0,
   
   print(glue(out_filename))
   if(output_file) write_csv(output, path = glue(out_filename))
-  beepr::beep(sound = 2) # surprise that means the program worked
+
+  # Play sound notification if beepr is installed
+  if (requireNamespace("beepr", quietly = TRUE)) {
+    beepr::beep(sound = 2)
+  }
   
   return(output)
 }
