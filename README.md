@@ -46,17 +46,25 @@ From the project root directory, execute either `Rscript 0-main.R` or, if you pr
 
 ## Description of data
 
-**`lai_data.rds`** - A dataset of estimates from Lai et al. (2014, 2016) discussed in a robustness check in the appendix.
+### Source data (included in repository)
 
-**`meta-analytic/*`** - intermediate datasets created by `code/3-sub-group.R`. This folder will be empty until you run that script.
+These files are included in the repository and serve as inputs to the analysis:
 
-**`prejudice_meta_data.dta`** - This is the `dta` equivalent of `prejudice_meta_data.rds` written for analysis in Stata 15.
+**`raw-data.csv`** - The raw meta-analysis data. This is the primary input file that gets transformed by the analysis scripts.
 
-**`prejudice_meta_data.rds`** - The maind dataset used in the meta-analysis. `1-clean-data.R` transforms `raw-data.csv` into this, and then `2-cohens-d.R`appends Cohen's D, variance of D, and standard error of D to each row. A data dictionary of the variables can be found in `documentation/`.
+**`lai_data.rds`** - A dataset of estimates from Lai et al. (2014, 2016) used in a robustness check discussed in the appendix.
 
-**`raw-data.csv`** - The raw data, before cleaning or the addition of Cohen's D columns.
+**`sim_data.rds`** - Simulated data for validating the methods in `6-methods-check.Rmd`.
 
-**`sim_data.rds`** - The simulated data for use in `6-methods-check.Rmd`.
+### Generated data (created by running the scripts)
+
+These files are created when you run the analysis and are not included in the repository:
+
+**`prejudice_meta_data.rds`** - The main dataset used in the meta-analysis. Created by `1-clean-data.R` (which transforms `raw-data.csv`) and then enhanced by `2-cohens-d.R` (which appends Cohen's D, variance of D, and standard error of D). A data dictionary of the variables can be found in `documentation/`.
+
+**`prejudice_meta_data.dta`** - Stata 15 version of `prejudice_meta_data.rds`, for users who prefer Stata.
+
+**`meta-analytic/*`** - Intermediate datasets containing meta-analytic results, created by `3-sub-group.R`.
 
 ## Documentation
 

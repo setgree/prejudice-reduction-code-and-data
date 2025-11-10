@@ -1,6 +1,12 @@
-# Data files
-data/
-!data/.gitkeep
+# Data files - exclude generated/intermediate data, but keep input data
+data/prejudice_meta_data.rds
+data/prejudice_meta_data.dta
+data/meta-analytic/
+
+# Keep essential input data files (these are exceptions to the above)
+!data/raw-data.csv
+!data/lai_data.rds
+!data/sim_data.rds
 
 # Output and results
 output/
