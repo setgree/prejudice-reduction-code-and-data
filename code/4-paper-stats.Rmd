@@ -538,16 +538,17 @@ These larger studies predict that on average, interventions would change feeling
 
 The relationship between our meta-analytic effect size and the size of a study's treatment group is highly significant.  (p < .01)
 ```{r}
-dat %>% 
+model_data <- dat %>%
   group_by(unique_paper_id, unique_study_id) %>%
   dplyr::summarise(d = mean(d),
                    var_d = mean(var_d),
                    n_treatment = mean(n_treatment),
-                   var_d = mean(var_d)) %>% 
-  ungroup() %>% 
-  mutate(st_err_d = sqrt(var_d)) %>% 
-  do(model = lm(d ~ st_err_d, data = .)) %>% 
-  broom::tidy(model) %>% 
+                   var_d = mean(var_d), .groups = "drop") %>%
+  ungroup() %>%
+  mutate(st_err_d = sqrt(var_d))
+
+model <- lm(d ~ st_err_d, data = model_data)
+broom::tidy(model) %>%
   mutate_if(is.numeric, ~round(., 3))
 ```
 

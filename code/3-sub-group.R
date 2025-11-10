@@ -7,7 +7,10 @@
 
 rm(list=ls())
 
-library(beepr)
+# Load beepr only if installed (used for audio notifications)
+if (requireNamespace("beepr", quietly = TRUE)) {
+  library(beepr)
+}
 library(dplyr)
 library(glue)
 library(janitor)

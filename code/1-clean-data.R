@@ -23,6 +23,9 @@ library(vtable)
 ## load raw data
 dat <- read_csv(file = '../data/raw-data.csv')
 
+## drop the unnamed first column (row numbers from original export)
+dat <- dat %>% select(-`...1`)
+
 ## put general information columns towards the end
 dat <- dat %>% select(-publication_type, -publication_title,
                       -abstract, -doi, -url,
