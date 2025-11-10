@@ -209,8 +209,10 @@ dat <- dat %>%
 table(dat$intervention_span_days)
 
 #' ### add unique_study_id variable -------------------------------------------
-dat <- dat %>%
-  mutate(unique_study_id = group_indices(., unique_paper_id, study_num))
+dat <- dat |>
+  group_by(unique_paper_id, study_num) |>
+  mutate(unique_study_id = cur_group_id()) |>
+  ungroup()
 
 #' Add delay category variable
 class(dat$delay)
